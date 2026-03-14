@@ -47,9 +47,16 @@ export default function Footer() {
             ))}
           </div>
 
-          <p className="text-xs text-gray-600 flex items-center gap-1 mt-2">
-            তৈরি করা হয়েছে <Heart className="w-3 h-3 text-red-500 fill-red-500" /> দিয়ে — ব্যাচ ২০১৭ টিম
-          </p>
+          <div className="flex flex-col items-center gap-1 mt-4">
+            <p className="text-xs text-gray-600 flex items-center gap-1">
+              তৈরি করা হয়েছে <Heart className="w-3 h-3 text-red-500 fill-red-500" /> দিয়ে — ব্যাচ ২০১৭ টিম
+            </p>
+            <p className="text-xs text-gray-600">
+              Developer:{' '}
+              <a href="https://github.com/zamansheikh" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-400 transition-colors">Md. Shamsuzzaman</a>
+              {' '}(<a href="https://facebook.com/zamansheikh.404" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 transition-colors">FB</a>)
+            </p>
+          </div>
         </div>
       </div>
     </footer>

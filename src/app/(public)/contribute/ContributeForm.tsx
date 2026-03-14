@@ -73,7 +73,35 @@ export default function ContributeForm({ memberNames }: { memberNames: string[] 
           </button>
         </div>
       ) : (
-        <form action={formAction} className="glass-card rounded-2xl border border-emerald-900/30 p-6 sm:p-8 space-y-5">
+        <>
+          {/* Payment Instructions */}
+          <div className="glass-card mb-8 rounded-2xl border border-emerald-900/30 p-6 bg-emerald-500/5">
+            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <HandCoins className="w-5 h-5 text-emerald-400" />
+              চাঁদা পাঠানোর মাধ্যম
+            </h2>
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+                <span className="text-sm font-medium text-white">Zaman</span>
+                <div className="sm:text-right mt-1 sm:mt-0">
+                  <p className="text-emerald-400 font-bold font-mono text-lg">01735069723</p>
+                  <p className="text-xs text-gray-500">বিকাশ, নগদ, রকেট (Personal)</p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+                <span className="text-sm font-medium text-white">Mehedi</span>
+                <div className="sm:text-right mt-1 sm:mt-0">
+                  <p className="text-emerald-400 font-bold font-mono text-lg">01701509966</p>
+                  <p className="text-xs text-gray-500">বিকাশ (Personal)</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-yellow-400 mt-4 font-medium px-2 pb-1">
+              * টাকা পাঠানোর পর নিচের ফর্মটি পূরণ করুন যাতে হিসাব রাখা সহজ হয়।
+            </p>
+          </div>
+
+          <form action={formAction} className="glass-card rounded-2xl border border-emerald-900/30 p-6 sm:p-8 space-y-5">
           {state.error && (
             <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -81,24 +109,26 @@ export default function ContributeForm({ memberNames }: { memberNames: string[] 
             </div>
           )}
 
-          {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               নাম <span className="text-red-400">*</span>
             </label>
-            <select
+            <input
+              type="text"
               name="name"
               required
-              className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-emerald-500/50 transition-colors appearance-none"
-              defaultValue=""
-            >
-              <option value="" disabled>আপনার নাম বেছে নিন</option>
+              list="member-names"
+              autoComplete="off"
+              placeholder="আপনার নাম বেছে নিন অথবা লিখুন"
+              className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-emerald-500/50 transition-colors"
+            />
+            <datalist id="member-names">
               {memberNames.map((name) => (
-                <option key={name} value={name}>{name}</option>
+                <option key={name} value={name} />
               ))}
-            </select>
+            </datalist>
             <p className="text-xs text-gray-500 mt-1">
-              * সদস্য তালিকায় থাকা নামগুলোই শুধু দেখা যাচ্ছে
+              * সঠিক সদস্য নাম দিন।
             </p>
           </div>
 
@@ -181,6 +211,7 @@ export default function ContributeForm({ memberNames }: { memberNames: string[] 
 
           <SubmitButton />
         </form>
+        </>
       )}
     </div>
   );

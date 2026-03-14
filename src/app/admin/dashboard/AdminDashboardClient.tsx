@@ -34,7 +34,7 @@ interface PendingContribution {
   transactionId?: string; phone: string; message?: string; submittedAt: string;
   status: 'pending' | 'approved' | 'rejected';
 }
-interface Expense { _id: string; description: string; amount: number; date: string; }
+interface Expense { _id: string; description: string; amount: number; date: string; spentBy: string; }
 interface Summary {
   totalCollected: number; totalExpense: number; remaining: number;
   memberCount: number; perMemberRefund: number;
@@ -172,7 +172,13 @@ function MembersTab({ members }: { members: Member[] }) {
             type="tel"
             name="phone"
             placeholder="ফোন নম্বর (ঐচ্ছিক)"
-            className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+            className="w-full sm:w-auto flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+          />
+          <input
+            type="number"
+            name="totalContribution"
+            placeholder="চাঁদা (ঐচ্ছিক)"
+            className="w-full sm:w-32 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
           />
           <SaveBtn label="যোগ করুন" />
         </form>
@@ -193,7 +199,13 @@ function MembersTab({ members }: { members: Member[] }) {
               type="tel"
               name="phone"
               defaultValue={editingMember.phone || ''}
-              className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
+              className="w-full sm:w-auto flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
+            />
+            <input
+              type="number"
+              name="totalContribution"
+              defaultValue={editingMember.totalContribution || 0}
+              className="w-full sm:w-32 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
             />
             <div className="flex gap-2">
               <SaveBtn label="আপডেট" />
@@ -371,6 +383,13 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
             placeholder="খরচের বিবরণ"
             className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
           />
+          <input
+            type="text"
+            name="spentBy"
+            required
+            placeholder="কে খরচ করেছে?"
+            className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+          />
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 text-sm">৳</span>
             <input
@@ -401,7 +420,7 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
             {expenses.map((e) => (
               <div key={e._id} className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/5 hover:border-red-500/20 transition-colors">
                 <div>
-                  <p className="text-sm font-medium text-white">{e.description}</p>
+                  <p className="text-sm font-medium text-white">{e.description} <span className="text-xs text-yellow-500/80">({e.spentBy})</span></p>
                   <p className="text-xs text-gray-500">{new Date(e.date).toLocaleDateString('bn-BD')}</p>
                 </div>
                 <div className="flex items-center gap-3">

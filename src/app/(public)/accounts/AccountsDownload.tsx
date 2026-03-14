@@ -15,6 +15,7 @@ interface Expense {
   description: string;
   amount: number;
   date: string;
+  spentBy: string;
 }
 
 interface Member {
@@ -45,11 +46,12 @@ export default function AccountsDownload({
     rows.push(['প্রতি সদস্য ফেরত', `${summary.perMemberRefund} টাকা`]);
     rows.push([]);
     rows.push(['--- খরচের বিবরণ ---']);
-    rows.push(['#', 'বিবরণ', 'তারিখ', 'পরিমাণ']);
+    rows.push(['#', 'বিবরণ', 'কে খরচ করেছে', 'তারিখ', 'পরিমাণ']);
     expenses.forEach((e, i) => {
       rows.push([
         `${i + 1}`,
         e.description,
+        e.spentBy || '---',
         new Date(e.date).toLocaleDateString('bn-BD'),
         `${e.amount} টাকা`,
       ]);

@@ -104,6 +104,7 @@ export default async function AccountsPage() {
                   <tr>
                     <th className="px-5 py-4 text-left">#</th>
                     <th className="px-5 py-4 text-left">বিবরণ</th>
+                    <th className="px-5 py-4 text-left">খরচকারী</th>
                     <th className="px-5 py-4 text-right">তারিখ</th>
                     <th className="px-5 py-4 text-right">পরিমাণ</th>
                   </tr>
@@ -111,7 +112,7 @@ export default async function AccountsPage() {
                 <tbody className="divide-y divide-white/5">
                   {expenses.map(
                     (
-                      exp: { _id: string; description: string; amount: number; date: string },
+                      exp: { _id: string; description: string; amount: number; date: string; spentBy: string },
                       idx: number
                     ) => (
                       <tr key={exp._id} className="transition-colors">
@@ -119,6 +120,7 @@ export default async function AccountsPage() {
                           {toBengaliNumber(idx + 1)}
                         </td>
                         <td className="px-5 py-4 text-white">{exp.description}</td>
+                        <td className="px-5 py-4 text-emerald-400 text-sm">{exp.spentBy || '---'}</td>
                         <td className="px-5 py-4 text-right text-gray-400 text-sm">
                           {formatDate(exp.date)}
                         </td>
@@ -131,7 +133,7 @@ export default async function AccountsPage() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-red-500/20 bg-red-500/5">
-                    <td colSpan={3} className="px-5 py-4 font-bold text-red-400">
+                    <td colSpan={4} className="px-5 py-4 font-bold text-red-400 text-right">
                       মোট খরচ
                     </td>
                     <td className="px-5 py-4 text-right font-bold text-red-400">

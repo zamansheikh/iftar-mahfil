@@ -65,6 +65,7 @@ export async function getMemberNames() {
 const memberSchema = z.object({
   name: z.string().min(1, 'নাম প্রয়োজন'),
   phone: z.string().optional(),
+  totalContribution: z.number().min(0).optional(),
 });
 
 export async function addMember(_prev: unknown, formData: FormData) {
@@ -73,6 +74,7 @@ export async function addMember(_prev: unknown, formData: FormData) {
   const data = {
     name: formData.get('name') as string,
     phone: formData.get('phone') as string,
+    totalContribution: Number(formData.get('totalContribution')) || 0,
   };
   const parsed = memberSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -93,6 +95,7 @@ export async function updateMember(_prev: unknown, formData: FormData) {
   const data = {
     name: formData.get('name') as string,
     phone: formData.get('phone') as string,
+    totalContribution: Number(formData.get('totalContribution')) || 0,
   };
   const parsed = memberSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -204,6 +207,7 @@ const expenseSchema = z.object({
   description: z.string().min(1, 'বিবরণ প্রয়োজন'),
   amount: z.number().min(0, 'পরিমাণ সঠিক হতে হবে'),
   date: z.string().min(1, 'তারিখ প্রয়োজন'),
+  spentBy: z.string().min(1, 'কে খরচ করেছে তা উল্লেখ করুন'),
 });
 
 export async function addExpense(_prev: unknown, formData: FormData) {
@@ -213,6 +217,7 @@ export async function addExpense(_prev: unknown, formData: FormData) {
     description: formData.get('description') as string,
     amount: Number(formData.get('amount')),
     date: formData.get('date') as string,
+    spentBy: formData.get('spentBy') as string,
   };
   const parsed = expenseSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
