@@ -1,0 +1,187 @@
+'use client';
+
+import { useActionState, useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
+import { submitContribution, ContributeFormState } from '@/actions/data';
+import { HandCoins, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+const paymentMethods = [
+  { value: 'নগদ', label: 'নগদ (হাতে হাতে)' },
+  { value: 'বিকাশ', label: 'বিকাশ' },
+  { value: 'নগদ_মোবাইল', label: 'নগদ (মোবাইল ব্যাংকিং)' },
+  { value: 'রকেট', label: 'রকেট' },
+  { value: 'অন্যান্য', label: 'অন্যান্য' },
+];
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full py-3.5 px-6 rounded-xl font-bold text-sm bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed text-black transition-all duration-200 shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:shadow-[0_0_30px_rgba(16,185,129,0.45)] flex items-center justify-center gap-2"
+    >
+      {pending ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          পাঠানো হচ্ছে...
+        </>
+      ) : (
+        <>
+          <HandCoins className="w-4 h-4" />
+          চাঁদা জমা দিন
+        </>
+      )}
+    </button>
+  );
+}
+
+export default function ContributeForm({ memberNames }: { memberNames: string[] }) {
+  const initialState: ContributeFormState = {};
+  const [state, formAction] = useActionState(submitContribution, initialState);
+
+  useEffect(() => {
+    if (state.success) toast.success(state.success);
+    if (state.error) toast.error(state.error);
+  }, [state]);
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      {/* Header */}
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
+          <HandCoins className="w-8 h-8 text-emerald-400" />
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">চাঁদা জমা</h1>
+        <p className="text-gray-400">ইফতার মাহফিলে আপনার চাঁদা জমা দিন</p>
+      </div>
+
+      {/* Success state */}
+      {state.success ? (
+        <div className="glass-card rounded-2xl border border-emerald-500/30 p-10 text-center">
+          <div className="w-20 h-20 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-5">
+            <CheckCircle className="w-10 h-10 text-emerald-400" />
+          </div>
+          <h2 className="text-xl font-bold text-emerald-400 mb-3">অনুরোধ গৃহীত হয়েছে!</h2>
+          <p className="text-gray-400 leading-relaxed mb-6">{state.success}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 rounded-xl border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/10 transition-colors"
+          >
+            আরেকটি জমা দিন
+          </button>
+        </div>
+      ) : (
+        <form action={formAction} className="glass-card rounded-2xl border border-emerald-900/30 p-6 sm:p-8 space-y-5">
+          {state.error && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {state.error}
+            </div>
+          )}
+
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              নাম <span className="text-red-400">*</span>
+            </label>
+            <select
+              name="name"
+              required
+              className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-emerald-500/50 transition-colors appearance-none"
+              defaultValue=""
+            >
+              <option value="" disabled>আপনার নাম বেছে নিন</option>
+              {memberNames.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              * সদস্য তালিকায় থাকা নামগুলোই শুধু দেখা যাচ্ছে
+            </p>
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              ফোন নম্বর <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              required
+              placeholder="01XXXXXXXXX"
+              className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:border-emerald-500/50 transition-colors"
+            />
+          </div>
+
+          {/* Amount */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              চাঁদার পরিমাণ (টাকা) <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400 font-bold text-sm">৳</span>
+              <input
+                type="number"
+                name="amount"
+                required
+                min="1"
+                placeholder="০"
+                className="w-full bg-[#0d1826] border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white text-sm placeholder-gray-600 focus:border-emerald-500/50 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Payment Method */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              পেমেন্টের মাধ্যম <span className="text-red-400">*</span>
+            </label>
+            <select
+              name="paymentMethod"
+              required
+              className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-emerald-500/50 transition-colors appearance-none"
+              defaultValue=""
+            >
+              <option value="" disabled>মাধ্যম বেছে নিন</option>
+              {paymentMethods.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Transaction ID */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              ট্রানজেকশন আইডি{' '}
+              <span className="text-gray-500 text-xs">(ঐচ্ছিক)</span>
+            </label>
+            <input
+              type="text"
+              name="transactionId"
+              placeholder="e.g. 8NH7XP2QR3"
+              className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:border-emerald-500/50 transition-colors font-mono"
+            />
+          </div>
+
+          {/* Message */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              মন্তব্য <span className="text-gray-500 text-xs">(ঐচ্ছিক)</span>
+            </label>
+            <textarea
+              name="message"
+              rows={3}
+              placeholder="কিছু বলতে চাইলে লিখুন..."
+              className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:border-emerald-500/50 transition-colors resize-none"
+            />
+          </div>
+
+          <SubmitButton />
+        </form>
+      )}
+    </div>
+  );
+}
