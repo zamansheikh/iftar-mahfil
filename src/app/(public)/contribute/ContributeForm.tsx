@@ -1,9 +1,10 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { submitContribution, ContributeFormState } from '@/actions/data';
-import { HandCoins, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { HandCoins, CheckCircle, AlertCircle, Loader2, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 const paymentMethods = [
@@ -13,6 +14,72 @@ const paymentMethods = [
   { value: 'রকেট', label: 'রকেট' },
   { value: 'অন্যান্য', label: 'অন্যান্য' },
 ];
+
+function SearchableCombobox({ items, name }: { items: string[], name: string }) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const filteredItems = items.filter(item => item.toLowerCase().includes(query.toLowerCase()));
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          name={name}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          required
+          autoComplete="off"
+          placeholder="আপনার নাম বেছে নিন অথবা লিখুন"
+          className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 pr-10 text-white text-sm focus:border-emerald-500/50 transition-colors"
+        />
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-emerald-400 transition-colors"
+        >
+          <ChevronDown className="w-4 h-4" />
+        </button>
+      </div>
+      {isOpen && (
+        <ul className="absolute z-10 w-full mt-1 max-h-56 overflow-auto bg-[#070d1a] border border-white/10 rounded-xl shadow-2xl py-1 list-none p-0 m-0 custom-scrollbar">
+          {filteredItems.length === 0 ? (
+            <li className="px-4 py-3 text-sm text-gray-400">নাম পাওয়া যায়নি। আপনার নাম টাইপ করুন।</li>
+          ) : (
+            filteredItems.map(item => (
+              <li
+                key={item}
+                className="px-4 py-2.5 text-sm text-white hover:bg-emerald-500/15 hover:text-emerald-400 cursor-pointer transition-colors border-b border-white/5 last:border-0"
+                onClick={() => {
+                  setQuery(item);
+                  setIsOpen(false);
+                }}
+              >
+                {item}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -103,7 +170,7 @@ export default function ContributeForm({ memberNames }: { memberNames: string[] 
 
           <form action={formAction} className="glass-card rounded-2xl border border-emerald-900/30 p-6 sm:p-8 space-y-5">
           {state.error && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm mb-5">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {state.error}
             </div>
@@ -111,24 +178,11 @@ export default function ContributeForm({ memberNames }: { memberNames: string[] 
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              নাম <span className="text-red-400">*</span>
+              নাম<span className="text-red-400">*</span>
             </label>
-            <input
-              type="text"
-              name="name"
-              required
-              list="member-names"
-              autoComplete="off"
-              placeholder="আপনার নাম বেছে নিন অথবা লিখুন"
-              className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-emerald-500/50 transition-colors"
-            />
-            <datalist id="member-names">
-              {memberNames.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
+            <SearchableCombobox items={memberNames} name="name" />
             <p className="text-xs text-gray-500 mt-1">
-              * সঠিক সদস্য নাম দিন।
+              * সঠিক সদস্য নাম দিন অথবা নিজের নাম লিখুন।
             </p>
           </div>
 

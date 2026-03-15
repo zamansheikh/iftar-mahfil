@@ -147,10 +147,6 @@ export async function submitContribution(
   const parsed = contributionSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const member = await Member.findOne({ name: parsed.data.name });
-  if (!member)
-    return { error: 'এই নামে কোন সদস্য পাওয়া যায়নি। সঠিক নাম দিন।' };
-
   await PendingContribution.create({ ...parsed.data, submittedAt: new Date() });
   revalidatePath('/contribute');
   return { success: 'আপনার চাঁদা জমা অনুরোধ পাঠানো হয়েছে। অ্যাডমিন অনুমোদন করলে দেখা যাবে।' };
@@ -172,12 +168,20 @@ export async function approveContribution(id: string) {
   if (!contribution) return { error: 'চাঁদা পাওয়া যায়নি।' };
   if (contribution.status !== 'pending') return { error: 'এটি ইতিমধ্যে প্রক্রিয়া করা হয়েছে।' };
 
-  const member = await Member.findOne({ name: contribution.name });
-  if (!member) return { error: 'সদস্য পাওয়া যায়নি।' };
+  let member = await Member.findOne({ name: contribution.name });
+  
+  if (!member) {
+    await Member.create({
+      name: contribution.name,
+      phone: contribution.phone,
+      totalContribution: contribution.amount
+    });
+  } else {
+    await Member.findByIdAndUpdate(member._id, {
+      $inc: { totalContribution: contribution.amount },
+    });
+  }
 
-  await Member.findByIdAndUpdate(member._id, {
-    $inc: { totalContribution: contribution.amount },
-  });
   await PendingContribution.findByIdAndUpdate(id, { status: 'approved' });
 
   revalidatePath('/members');
