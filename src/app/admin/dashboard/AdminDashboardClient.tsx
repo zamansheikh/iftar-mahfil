@@ -338,37 +338,42 @@ function MembersTab({ members }: { members: Member[] }) {
             {members.map((m) => (
               <div
                 key={m._id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-white/3 border border-white/5 hover:border-emerald-500/20 transition-colors"
+                className="flex flex-col gap-2 p-3 rounded-xl bg-white/3 border border-white/5 hover:border-emerald-500/20 transition-colors"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 shrink-0 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-400 text-xs font-bold">
-                    {m.name.charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{m.name}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {m.alternativeName && <p className="text-xs text-emerald-400/80 truncate">{m.alternativeName}</p>}
-                      {m.phone && <p className="text-xs text-gray-500 truncate">{m.phone}</p>}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 shrink-0 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-400 text-xs font-bold">
+                      {m.name.charAt(0)}
+                    </div>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{m.name}</p>
+                      {m.alternativeName ? (
+                        <p className="text-xs text-emerald-400 truncate">{m.alternativeName}</p>
+                      ) : null}
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end sm:justify-start">
                   <span className="text-sm font-semibold text-yellow-400 whitespace-nowrap">৳ {toBn(m.totalContribution)}</span>
-                  {m.phone && (
-                    <a
-                      href={`tel:${m.phone}`}
-                      className="border border-green-500/30 text-green-400 hover:bg-green-500/10 rounded-lg px-2.5 py-1.5 transition-colors inline-flex items-center gap-1 shrink-0"
-                      title={`কল করুন: ${m.phone}`}
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                  <Btn onClick={() => setEditingId(m._id)} className="border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 shrink-0">
-                    <Edit className="w-3.5 h-3.5" />
-                  </Btn>
-                  <Btn onClick={() => handleDelete(m._id, m.name)} disabled={isPending} className="border border-red-500/30 text-red-400 hover:bg-red-500/10 shrink-0">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Btn>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-xs text-gray-500 truncate">{m.phone}</div>
+                  <div className="flex items-center gap-3">
+                    {m.phone && (
+                      <a
+                        href={`tel:${m.phone}`}
+                        className="border border-green-500/30 text-green-400 hover:bg-green-500/10 rounded-lg px-2.5 py-1.5 transition-colors inline-flex items-center gap-1"
+                        title={`কল করুন: ${m.phone}`}
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                    <Btn onClick={() => setEditingId(m._id)} className="border border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                      <Edit className="w-3.5 h-3.5" />
+                    </Btn>
+                    <Btn onClick={() => handleDelete(m._id, m.name)} disabled={isPending} className="border border-red-500/30 text-red-400 hover:bg-red-500/10">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Btn>
+                  </div>
                 </div>
               </div>
             ))}
@@ -702,24 +707,26 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
         ) : (
           <div className="space-y-2">
             {expenses.map((e) => (
-              <div key={e._id} className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/5 hover:border-red-500/20 transition-colors">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-white">{e.description} <span className="text-xs text-yellow-500/80">({e.spentBy})</span></p>
+              <div key={e._id} className="flex flex-col p-3 rounded-xl bg-white/3 border border-white/5 hover:border-red-500/20 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{e.description} <span className="text-xs text-yellow-500/80">({e.spentBy})</span></p>
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${e.isExpended ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
                       {e.isExpended ? '✓ খরচ হয়েছে' : '⧗ তালিকা'}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500">{new Date(e.date).toLocaleDateString('bn-BD')}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-red-400">৳ {toBn(e.amount)}</span>
-                  <Btn onClick={() => setEditingExpenseId(e._id)} disabled={isPending} className="border border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
-                    <Edit className="w-3.5 h-3.5" />
-                  </Btn>
-                  <Btn onClick={() => handleDelete(e._id, e.description)} disabled={isPending} className="border border-red-500/30 text-red-400 hover:bg-red-500/10">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Btn>
+                  <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+                    <span className="text-xs text-gray-500 truncate">{new Date(e.date).toLocaleDateString('bn-BD')}</span>
+                    <span className="text-sm font-bold text-red-400 whitespace-nowrap">৳ {toBn(e.amount)}</span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Btn onClick={() => setEditingExpenseId(e._id)} disabled={isPending} className="border border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                        <Edit className="w-3.5 h-3.5" />
+                      </Btn>
+                      <Btn onClick={() => handleDelete(e._id, e.description)} disabled={isPending} className="border border-red-500/30 text-red-400 hover:bg-red-500/10">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Btn>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
