@@ -247,137 +247,121 @@ select:focus {
 
 @layer base {
   @media print {
-    @page { margin: 15mm; }
-    
+    @page { margin: 12mm; size: A4 portrait; }
+
+    html,
     body {
-      background: white !important;
-      color: black !important;
-      font-size: 11pt;
+      background: #ffffff !important;
+      color: #111827 !important;
+      font-size: 10.5pt;
+      line-height: 1.4;
+      overflow: visible !important;
     }
-    
-    body * {
-      visibility: hidden;
+
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
     }
-    
-    .printable-area, .printable-area * {
-      visibility: visible;
+
+    .no-print,
+    .no-print * {
+      display: none !important;
     }
 
     .printable-area {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      margin: 0;
-      padding: 0;
+      margin: 0 !important;
+      padding: 0 !important;
     }
 
     .print-overflow-visible {
       overflow: visible !important;
     }
 
-    .no-print, .no-print * {
-      display: none !important;
-      height: 0;
-      width: 0;
-    }
-
-    * {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-      color: black !important;
-      box-shadow: none !important;
-      text-shadow: none !important;
-    }
-
-    /* Print header explicitly */
     .print-header {
       display: block !important;
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #ccc;
+      margin: 0 0 16px 0 !important;
+      padding: 0 0 10px 0 !important;
+      border-bottom: 2px solid #d1d5db !important;
       text-align: center;
-      visibility: visible;
+      color: #111827 !important;
     }
+
     .print-header h1 {
-      font-size: 20pt;
-      font-weight: bold;
-      margin-bottom: 8px;
+      font-size: 18pt !important;
+      margin: 0 0 6px 0 !important;
+      font-weight: 700 !important;
+      color: #111827 !important;
     }
+
     .print-header p {
-      font-size: 14pt;
-      color: #333 !important;
-      font-weight: 600;
-    }
-
-    /* Keep table borders visible and distinct in print */
-    table {
-      border-collapse: collapse !important;
-      width: 100% !important;
-      margin-bottom: 20px !important;
-    }
-    th, td {
-      border: 1px solid #999 !important;
-      padding: 10px !important;
-      text-align: left;
-    }
-    th {
-      background-color: #e5e7eb !important;
-      font-weight: bold !important;
-      color: black !important;
-    }
-
-    
-    .data-table th, .data-table td {
+      margin: 0 !important;
       font-size: 11pt !important;
+      color: #374151 !important;
+      font-weight: 600 !important;
     }
 
-    h2, h3, .text-lg, .text-xl {
-      color: black !important;
-      margin-top: 15px !important;
-      margin-bottom: 10px !important;
-      font-size: 16pt !important;
-      font-weight: bold !important;
+    .glass-card,
+    .border,
+    .rounded-2xl,
+    .rounded-xl {
+      background: #ffffff !important;
+      border-color: #d1d5db !important;
+      color: #111827 !important;
+      backdrop-filter: none !important;
     }
-    
-    /* Ensure summary cards print correctly */
+
+    .text-white,
+    .text-gray-400,
+    .text-gray-500,
+    .text-emerald-400,
+    .text-red-400,
+    .text-yellow-400,
+    .text-blue-400 {
+      color: #111827 !important;
+    }
+
+    h2,
+    h3,
+    .text-lg,
+    .text-xl {
+      color: #111827 !important;
+      margin: 12px 0 8px 0 !important;
+      font-size: 14pt !important;
+      font-weight: 700 !important;
+    }
+
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin: 0 0 14px 0 !important;
+      background: #ffffff !important;
+      table-layout: auto;
+    }
+
+    th,
+    td {
+      border: 1px solid #9ca3af !important;
+      padding: 7px 8px !important;
+      color: #111827 !important;
+      vertical-align: top;
+      word-break: break-word;
+      white-space: normal;
+      font-size: 10pt !important;
+    }
+
+    th {
+      background: #e5e7eb !important;
+      font-weight: 700 !important;
+    }
+
+    tr,
+    td,
+    th,
     .glass-card {
-      border: 1px solid #ccc !important;
-      background: #f9fafb !important;
       break-inside: avoid;
+      page-break-inside: avoid;
     }
-    
-    /* Utility forcing colors to dark in print, removing backgrounds */
-    .text-white, .text-gray-400, .text-gray-500, .text-emerald-400, .text-red-400, .text-yellow-400 {
-      color: black !important;
-    }
-    
-    /* Prevent cutting rows */
-    tr {
-      break-inside: avoid;
-    }
-
-    /* Print only the printable-area, nothing else */
-    body {
-      background: white !important;
-    }
-    
-    body * {
-      visibility: hidden;
-    }
-
-    .printable-area, .printable-area * {
-      visibility: visible;
-    }
-
-    .printable-area {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-    }
-
   }
 }

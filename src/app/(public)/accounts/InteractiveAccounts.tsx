@@ -184,7 +184,7 @@ export default function InteractiveAccounts({
           </div>
         ) : (
           <div className="glass-card rounded-2xl border border-red-900/20 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto print-overflow-visible">
               <table className="w-full data-table">
                 <thead>
                   <tr>
@@ -242,7 +242,7 @@ export default function InteractiveAccounts({
           </div>
         ) : (
           <div className="glass-card rounded-2xl border border-emerald-900/20 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto print-overflow-visible">
               <table className="w-full data-table">
                 <thead>
                   <tr>

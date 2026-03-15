@@ -729,7 +729,7 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
         ))}
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0d1826] border border-white/10 rounded-2xl p-4 data-html2canvas-ignore">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0d1826] border border-white/10 rounded-2xl p-4 data-html2canvas-ignore no-print">
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-gray-300">ফেরত হিসাবের ধরণ:</span>
           <div className="flex bg-white/5 rounded-xl p-1">
@@ -818,7 +818,7 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
                     <td className="px-4 py-3 text-white font-medium">{e.description}</td>
                     <td className="px-4 py-3 text-gray-400">{new Date(e.date).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                     <td className="px-4 py-3 text-gray-400">{e.spentBy}</td>
-                    <td className="px-4 py-3 text-right text-red-400 font-semibold w-whitespace-nowrap">৳ {toBn(e.amount)}</td>
+                    <td className="px-4 py-3 text-right text-red-400 font-semibold whitespace-nowrap">৳ {toBn(e.amount)}</td>
                   </tr>
                 ))}
               </tbody>
