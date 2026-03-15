@@ -154,10 +154,10 @@ export default async function HomePage() {
           />
         </div>
 
-        {summary.perMemberRefund > 0 && (
+        {summary.remaining > 0 && (
           <div className="mt-6 p-5 rounded-2xl border border-yellow-500/30 bg-yellow-500/5 text-center">
             <p className="text-yellow-400 font-semibold text-lg">
-              🎉 প্রতি সদস্য ফেরত পাবেন ৳ {toBengaliNumber(summary.perMemberRefund)} টাকা
+              🎉 সমস্ত খরচ বাদে অবশিষ্ট আছে ৳ {toBengaliNumber(summary.remaining)} টাকা, যা সদস্যদের মাঝে ফেরত দেওয়া হবে।
             </p>
           </div>
         )}

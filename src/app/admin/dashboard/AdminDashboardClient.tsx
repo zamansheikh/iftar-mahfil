@@ -185,36 +185,60 @@ function MembersTab({ members }: { members: Member[] }) {
       </SectionCard>
 
       {editingId && editingMember && (
-        <SectionCard title="সদস্য সম্পাদনা">
-          <form action={updateFormAction} className="flex flex-col sm:flex-row gap-3">
-            <input type="hidden" name="id" value={editingId} />
-            <input
-              type="text"
-              name="name"
-              defaultValue={editingMember.name}
-              required
-              className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
-            />
-            <input
-              type="tel"
-              name="phone"
-              defaultValue={editingMember.phone || ''}
-              className="w-full sm:w-auto flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
-            />
-            <input
-              type="number"
-              name="totalContribution"
-              defaultValue={editingMember.totalContribution || 0}
-              className="w-full sm:w-32 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
-            />
-            <div className="flex gap-2">
-              <SaveBtn label="আপডেট" />
-              <Btn onClick={() => setEditingId(null)} className="border border-white/10 text-gray-400 hover:border-white/20">
-                বাতিল
-              </Btn>
-            </div>
-          </form>
-        </SectionCard>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#070d1a] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2">
+              <span className="w-1.5 h-5 rounded-full bg-emerald-500 block" />
+              সদস্য সম্পাদনা
+            </h3>
+            <button
+              onClick={() => setEditingId(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              type="button"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <form action={updateFormAction} className="space-y-4">
+              <input type="hidden" name="id" value={editingId} />
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">নাম</label>
+                <input
+                  type="text"
+                  name="name"
+                  defaultValue={editingMember.name}
+                  required
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">ফোন নম্বর</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  defaultValue={editingMember.phone || ''}
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">জমাকৃত চাঁদা (৳)</label>
+                <input
+                  type="number"
+                  name="totalContribution"
+                  defaultValue={editingMember.totalContribution || 0}
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Btn type="button" onClick={() => setEditingId(null)} className="flex-1 justify-center border border-white/10 text-gray-400 hover:border-white/20">
+                  বাতিল
+                </Btn>
+                <div className="flex-1">
+                  <SaveBtn label="আপডেট" />
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       <SectionCard title={`সদস্য তালিকা (${toBn(members.length)} জন)`}>
@@ -445,15 +469,31 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
 // ─── Tab: Summary ─────────────────────────────────────────────────────────────
 
 function SummaryTab({ summary, members }: { summary: Summary; members: Member[] }) {
+  const [refundType, setRefundType] = useState<'equal' | 'proportional'>('equal');
+
+  const validMembers = members.filter((m) => m.totalContribution >= 1);
+  const totalValidContribution = validMembers.reduce((sum, m) => sum + m.totalContribution, 0);
+
+  const calculateRefund = (member: Member) => {
+    if (member.totalContribution < 1) return 0;
+    if (summary.remaining <= 0) return 0;
+
+    if (refundType === 'equal') {
+      return validMembers.length > 0 ? Math.floor(summary.remaining / validMembers.length) : 0;
+    } else {
+      const ratio = totalValidContribution > 0 ? member.totalContribution / totalValidContribution : 0;
+      return Math.floor(summary.remaining * ratio);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'মোট জমা', value: summary.totalCollected, color: 'text-emerald-400', icon: <TrendingUp className="w-5 h-5" /> },
           { label: 'মোট খরচ', value: summary.totalExpense, color: 'text-red-400', icon: <Receipt className="w-5 h-5" /> },
           { label: 'অবশিষ্ট', value: summary.remaining, color: 'text-yellow-400', icon: <Wallet className="w-5 h-5" /> },
           { label: 'সদস্য সংখ্যা', value: summary.memberCount, color: 'text-blue-400', icon: <Users className="w-5 h-5" />, isMember: true },
-          { label: 'প্রতি সদস্য ফেরত', value: summary.perMemberRefund, color: 'text-purple-400', icon: <RotateCcw className="w-5 h-5" /> },
         ].map((item) => (
           <div key={item.label} className="glass-card rounded-xl border border-white/5 p-4">
             <div className="flex items-center gap-2 mb-2 text-gray-500">{item.icon}<span className="text-xs uppercase tracking-wider">{item.label}</span></div>
@@ -464,11 +504,46 @@ function SummaryTab({ summary, members }: { summary: Summary; members: Member[] 
         ))}
       </div>
 
-      {summary.perMemberRefund > 0 && (
+      <div className="flex items-center justify-between">
+        <div className="flex bg-white/5 rounded-xl p-1">
+          <button
+            onClick={() => setRefundType('equal')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              refundType === 'equal'
+                ? 'bg-emerald-500 text-black shadow-md'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            সমানভাবে
+          </button>
+          <button
+            onClick={() => setRefundType('proportional')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              refundType === 'proportional'
+                ? 'bg-emerald-500 text-black shadow-md'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            জমাকৃত হার অনুযায়ী
+          </button>
+        </div>
+      </div>
+
+      {summary.remaining > 0 && validMembers.length > 0 && (
         <div className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 text-center">
-          <p className="text-lg font-bold text-emerald-400">
-            ✅ প্রতি সদস্য ফেরত পাবেন ৳ {toBn(summary.perMemberRefund)} টাকা
-          </p>
+            {refundType === 'equal' ? (
+              <p className="text-lg font-bold text-emerald-400">
+                ✅ প্রত্যেক সদস্য (যারা চাঁদা দিয়েছেন) ফেরত পাবেন{' '}
+                <span className="text-2xl">
+                  ৳ {toBn(Math.floor(summary.remaining / validMembers.length))}
+                </span>{' '}
+                টাকা
+              </p>
+            ) : (
+              <p className="text-lg font-bold text-emerald-400">
+                ✅ সদস্যরা তাদের জমাকৃত চাঁদার আনুপাতিক হারে ফেরত পাবেন
+              </p>
+            )}
         </div>
       )}
 
@@ -489,13 +564,14 @@ function SummaryTab({ summary, members }: { summary: Summary; members: Member[] 
               </thead>
               <tbody className="divide-y divide-white/5">
                 {members.map((m, i) => {
-                  const net = summary.perMemberRefund - m.totalContribution;
+                  const refundAmt = calculateRefund(m);
+                  const net = refundAmt - m.totalContribution;
                   return (
                     <tr key={m._id}>
                       <td className="px-4 py-3 text-gray-500 text-sm">{toBn(i + 1)}</td>
                       <td className="px-4 py-3 text-white font-medium">{m.name}</td>
                       <td className="px-4 py-3 text-right text-yellow-400 font-semibold">৳ {toBn(m.totalContribution)}</td>
-                      <td className="px-4 py-3 text-right text-emerald-400 font-semibold">৳ {toBn(summary.perMemberRefund)}</td>
+                      <td className="px-4 py-3 text-right text-emerald-400 font-semibold">৳ {toBn(refundAmt)}</td>
                       <td className={`px-4 py-3 text-right font-bold ${net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {net >= 0 ? '+' : ''}৳ {toBn(Math.abs(net))}
                       </td>

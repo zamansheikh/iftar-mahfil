@@ -1,0 +1,311 @@
+'use client';
+
+import { useState } from 'react';
+import { Receipt, Users, Download, Loader2 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
+function toBengaliNumber(n: number | string): string {
+  const d = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return n.toString().replace(/\d/g, (x) => d[parseInt(x)]);
+}
+
+function formatDate(date: string | Date) {
+  return new Date(date).toLocaleDateString('bn-BD', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+interface Summary {
+  totalCollected: number;
+  totalExpense: number;
+  remaining: number;
+  memberCount: number;
+}
+
+interface Expense {
+  _id: string;
+  description: string;
+  amount: number;
+  date: string;
+  spentBy: string;
+}
+
+interface Member {
+  _id: string;
+  name: string;
+  totalContribution: number;
+}
+
+export default function InteractiveAccounts({
+  summary,
+  expenses,
+  members,
+}: {
+  summary: Summary;
+  expenses: Expense[];
+  members: Member[];
+}) {
+  const [refundType, setRefundType] = useState<'equal' | 'proportional'>('equal');
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const validMembers = members.filter((m) => m.totalContribution >= 1);
+  const totalValidContribution = validMembers.reduce((sum, m) => sum + m.totalContribution, 0);
+
+  const calculateRefund = (member: Member) => {
+    if (member.totalContribution < 1) return 0;
+    if (summary.remaining <= 0) return 0;
+
+    if (refundType === 'equal') {
+      return validMembers.length > 0 ? Math.floor(summary.remaining / validMembers.length) : 0;
+    } else {
+      const ratio = totalValidContribution > 0 ? member.totalContribution / totalValidContribution : 0;
+      return Math.floor(summary.remaining * ratio);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    try {
+      const element = document.getElementById('pdf-content');
+      if (!element) return;
+
+      const containers = element.querySelectorAll('.overflow-x-auto');
+      const originalClasses: string[] = [];
+      
+      // Temporarily remove overflow to capture full table widths
+      containers.forEach((el) => {
+        originalClasses.push(el.className);
+        el.className = el.className.replace('overflow-x-auto', '');
+      });
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#070d1a',
+        windowWidth: 1200, // force wide view so tables won't squish horizontally
+      });
+
+      // Restore original classes
+      containers.forEach((el, index) => {
+        el.className = originalClasses[index];
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // Add slight padding
+      const margin = 10;
+      const printWidth = pdfWidth - (margin * 2);
+      const printHeight = (canvas.height * printWidth) / canvas.width;
+      
+      let position = margin;
+      let heightLeft = printHeight;
+
+      // First page
+      pdf.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
+      heightLeft -= (pageHeight - margin * 2);
+
+      // Add new pages if content overflows A4 size
+      while (heightLeft > 0) {
+        // Adjust position negative to display next chunk
+        position = heightLeft - printHeight - margin; 
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
+        heightLeft -= (pageHeight - margin * 2);
+      }
+
+      pdf.save(`iftar-mahfil-hisab-${refundType}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('পিডিএফ তৈরি বার্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  return (
+    <div id="pdf-content" className="p-4 sm:p-0">
+      {/* Refund Banner and Controls */}
+      {summary.remaining > 0 && validMembers.length > 0 && (
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0d1826] border border-white/10 rounded-2xl p-4 data-html2canvas-ignore">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-300">ফেরত হিসাবের ধরণ:</span>
+              <div className="flex bg-white/5 rounded-xl p-1">
+                <button
+                  onClick={() => setRefundType('equal')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                    refundType === 'equal'
+                      ? 'bg-emerald-500 text-black shadow-md'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  সমানভাবে
+                </button>
+                <button
+                  onClick={() => setRefundType('proportional')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                    refundType === 'proportional'
+                      ? 'bg-emerald-500 text-black shadow-md'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  জমাকৃত হার অনুযায়ী
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-yellow-500/30 text-yellow-400 text-sm font-medium hover:bg-yellow-500/10 transition-colors w-full sm:w-auto justify-center disabled:opacity-50"
+            >
+              {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {isDownloading ? 'পিডিএফ তৈরি হচ্ছে...' : 'পিডিএফ ডাউনলোড'}
+            </button>
+          </div>
+
+          <div className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 text-center">
+            {refundType === 'equal' ? (
+              <>
+                <p className="text-lg font-bold text-emerald-400">
+                  প্রত্যেক সদস্য (যারা চাঁদা দিয়েছেন) ফেরত পাবেন{' '}
+                  <span className="text-2xl">
+                    ৳ {toBengaliNumber(Math.floor(summary.remaining / validMembers.length))}
+                  </span>{' '}
+                  টাকা
+                </p>
+                <p className="text-xs text-gray-400 mt-2">
+                  (শুধুমাত্র চাঁদা প্রদানকারী {toBengaliNumber(validMembers.length)} জন সদস্যের মাঝে অবশিষ্ট অর্থ সমানভাবে ভাগ করা হয়েছে)
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-bold text-emerald-400">
+                  সদস্যরা তাদের জমাকৃত চাঁদার আনুপাতিক হারে ফেরত পাবেন
+                </p>
+                <p className="text-xs text-gray-400 mt-2">
+                  (যে যত শতাংশ মূল ফাণ্ডে জমা দিয়েছেন, অবশিষ্ট অর্থের তত শতাংশ ফেরত পাবেন)
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Expense List */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Receipt className="w-5 h-5 text-red-400" />
+            খরচের বিস্তারিত
+          </h2>
+        </div>
+
+        {expenses.length === 0 ? (
+          <div className="glass-card rounded-2xl p-12 text-center border border-white/5">
+            <Receipt className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500">এখনও কোনো খরচ যোগ করা হয়নি।</p>
+          </div>
+        ) : (
+          <div className="glass-card rounded-2xl border border-red-900/20 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full data-table">
+                <thead>
+                  <tr>
+                    <th className="px-5 py-4 text-left">#</th>
+                    <th className="px-5 py-4 text-left">বিবরণ</th>
+                    <th className="px-5 py-4 text-left">খরচকারী</th>
+                    <th className="px-5 py-4 text-right">তারিখ</th>
+                    <th className="px-5 py-4 text-right">পরিমাণ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {expenses.map((exp, idx) => (
+                    <tr key={exp._id} className="transition-colors">
+                      <td className="px-5 py-4 text-gray-500 text-sm">
+                        {toBengaliNumber(idx + 1)}
+                      </td>
+                      <td className="px-5 py-4 text-white">{exp.description}</td>
+                      <td className="px-5 py-4 text-emerald-400 text-sm">{exp.spentBy || '---'}</td>
+                      <td className="px-5 py-4 text-right text-gray-400 text-sm">
+                        {formatDate(exp.date)}
+                      </td>
+                      <td className="px-5 py-4 text-right font-semibold text-red-400">
+                        ৳ {toBengaliNumber(exp.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-red-500/20 bg-red-500/5">
+                    <td colSpan={4} className="px-5 py-4 font-bold text-red-400 text-right">
+                      মোট খরচ
+                    </td>
+                    <td className="px-5 py-4 text-right font-bold text-red-400">
+                      ৳ {toBengaliNumber(summary.totalExpense)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Members contribution */}
+      <div>
+        <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
+          <Users className="w-5 h-5 text-emerald-400" />
+          সদস্যদের চাঁদার তালিকা
+        </h2>
+
+        {members.length === 0 ? (
+          <div className="glass-card rounded-2xl p-12 text-center border border-white/5">
+            <Users className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500">এখনও কোনো সদস্য নেই।</p>
+          </div>
+        ) : (
+          <div className="glass-card rounded-2xl border border-emerald-900/20 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full data-table">
+                <thead>
+                  <tr>
+                    <th className="px-5 py-4 text-left">#</th>
+                    <th className="px-5 py-4 text-left">নাম</th>
+                    <th className="px-5 py-4 text-right">জমাকৃত চাঁদা</th>
+                    <th className="px-5 py-4 text-right">ফেরত পাবেন</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {members.map((member, idx) => {
+                    const refundAmt = calculateRefund(member);
+                    return (
+                      <tr key={member._id} className="transition-colors">
+                        <td className="px-5 py-4 text-gray-500 text-sm">
+                          {toBengaliNumber(idx + 1)}
+                        </td>
+                        <td className="px-5 py-4 font-medium text-white">{member.name}</td>
+                        <td className="px-5 py-4 text-right text-yellow-400 font-semibold">
+                          ৳ {toBengaliNumber(member.totalContribution)}
+                        </td>
+                        <td className="px-5 py-4 text-right text-emerald-400 font-semibold">
+                          ৳ {toBengaliNumber(refundAmt)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
