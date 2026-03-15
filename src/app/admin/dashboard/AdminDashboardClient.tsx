@@ -29,7 +29,7 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface EventInfo {
-  title: string; date: string; time: string; location: string; description: string;
+  title: string; date: string; time: string; location: string; description: string; exactDate?: string;
 }
 interface Member { _id: string; name: string; alternativeName?: string; phone?: string; totalContribution: number; }
 interface PendingContribution {
@@ -116,6 +116,15 @@ function EventTab({ eventInfo }: { eventInfo: EventInfo }) {
             />
           </div>
         ))}
+        <div>
+          <label className="block text-xs font-medium text-gray-400 mb-1.5">আসল সময় (কাউন্টডাউনের জন্য)</label>
+          <input
+            type="datetime-local"
+            name="exactDate"
+            defaultValue={eventInfo.exactDate ? new Date(new Date(eventInfo.exactDate).getTime() - (new Date(eventInfo.exactDate).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''}
+            className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+          />
+        </div>
         <div>
           <label className="block text-xs font-medium text-gray-400 mb-1.5">বিবরণ</label>
           <textarea

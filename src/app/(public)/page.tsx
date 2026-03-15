@@ -4,6 +4,7 @@ import { MapPin, Clock, CalendarDays, Users, TrendingUp, Wallet, ArrowRight } fr
 import Link from 'next/link';
 import { getEventInfo, getSummary } from '@/actions/data';
 import SummaryCard from '@/components/SummaryCard';
+import { CountdownTimer, DynamicRemainingMessage } from '@/components/HomeClientFeatures';
 
 export const metadata: Metadata = {
   title: 'হোম — কান্দানিয়া উচ্চ বিদ্যালয় ব্যাচ ২০১৭ ইফতার মাহফিল',
@@ -112,6 +113,10 @@ export default async function HomePage() {
             </div>
           ))}
         </div>
+
+        {eventInfo.exactDate && (
+          <CountdownTimer exactDateStr={eventInfo.exactDate} />
+        )}
       </section>
 
       {/* ──── Live Summary ──── */}
@@ -155,11 +160,7 @@ export default async function HomePage() {
         </div>
 
         {summary.remaining > 0 && (
-          <div className="mt-6 p-5 rounded-2xl border border-yellow-500/30 bg-yellow-500/5 text-center">
-            <p className="text-yellow-400 font-semibold text-lg">
-              🎉 সমস্ত খরচ বাদে অবশিষ্ট আছে ৳ {toBengaliNumber(summary.remaining)} টাকা, যা সদস্যদের মাঝে ফেরত দেওয়া হবে।
-            </p>
-          </div>
+          <DynamicRemainingMessage remaining={summary.remaining} exactDateStr={eventInfo.exactDate} />
         )}
       </section>
 

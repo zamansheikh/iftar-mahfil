@@ -24,6 +24,7 @@ export async function getEventInfo() {
 const eventInfoSchema = z.object({
   title: z.string().min(1, 'শিরোনাম প্রয়োজন'),
   date: z.string().min(1, 'তারিখ প্রয়োজন'),
+  exactDate: z.string().optional(),
   time: z.string().min(1, 'সময় প্রয়োজন'),
   location: z.string().min(1, 'স্থান প্রয়োজন'),
   description: z.string(),
@@ -35,6 +36,7 @@ export async function updateEventInfo(_prev: unknown, formData: FormData) {
   const data = {
     title: formData.get('title') as string,
     date: formData.get('date') as string,
+    exactDate: formData.get('exactDate') as string,
     time: formData.get('time') as string,
     location: formData.get('location') as string,
     description: formData.get('description') as string,
@@ -42,7 +44,14 @@ export async function updateEventInfo(_prev: unknown, formData: FormData) {
   const parsed = eventInfoSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await EventInfo.findOneAndUpdate({}, parsed.data, { upsert: true });
+  const finalData: any = { ...parsed.data };
+  if (finalData.exactDate) {
+    finalData.exactDate = new Date(finalData.exactDate);
+  } else {
+    delete finalData.exactDate;
+  }
+
+  await EventInfo.findOneAndUpdate({}, finalData, { upsert: true });
   revalidatePath('/');
   revalidatePath('/admin/dashboard');
   return { success: 'ইভেন্ট তথ্য সংরক্ষণ হয়েছে।' };
