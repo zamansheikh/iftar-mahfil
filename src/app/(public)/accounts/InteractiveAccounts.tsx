@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { Receipt, Users, Download, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { loadNotoSansBengaliFont } from '@/lib/pdf';
 
 function toBengaliNumber(n: number | string): string {
   const d = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
   return n.toString().replace(/\d/g, (x) => d[parseInt(x)]);
 }
+
 
 function formatDate(date: string | Date) {
   return new Date(date).toLocaleDateString('bn-BD', {
@@ -78,59 +79,66 @@ export default function InteractiveAccounts({
 
   const handleDownloadPDF = async () => {
     setIsDownloading(true);
+
     try {
-      const element = document.getElementById('pdf-content');
-      if (!element) return;
+      await loadNotoSansBengaliFont();
 
-      const containers = element.querySelectorAll('.overflow-x-auto');
-      const originalClasses: string[] = [];
-      
-      // Temporarily remove overflow to capture full table widths
-      containers.forEach((el) => {
-        originalClasses.push(el.className);
-        el.className = el.className.replace('overflow-x-auto', '');
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      doc.setFont('NotoSansBengali');
+
+      const margin = 14;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const usableWidth = pageWidth - margin * 2;
+      let y = 18;
+
+      doc.setFontSize(16);
+      doc.text('ইফতার মাহফিল হিসাব-নিকাশ', margin, y);
+
+      y += 8;
+      doc.setFontSize(10);
+      doc.text(`মোট জমা: ৳ ${toBengaliNumber(summary.totalCollected)}`, margin, y);
+      doc.text(`মোট খরচ: ৳ ${toBengaliNumber(summary.totalExpense)}`, margin + usableWidth / 2, y);
+
+      y += 6;
+      doc.text(`অবশিষ্ট: ৳ ${toBengaliNumber(summary.remaining)}`, margin, y);
+      doc.text(`সদস্য সংখ্যা: ${toBengaliNumber(summary.memberCount)}`, margin + usableWidth / 2, y);
+
+      y += 12;
+      doc.setFontSize(11);
+      doc.text('সদস্যদের চাঁদার তালিকা', margin, y);
+
+      y += 8;
+      doc.setFontSize(9);
+
+      const headers = ['#', 'নাম', 'জমাকৃত', 'ফেরত'];
+      const colWidths = [12, usableWidth * 0.4, usableWidth * 0.25, usableWidth * 0.25];
+      const colX = [
+        margin,
+        margin + colWidths[0],
+        margin + colWidths[0] + colWidths[1],
+        margin + colWidths[0] + colWidths[1] + colWidths[2],
+      ];
+
+      headers.forEach((text, idx) => doc.text(text, colX[idx], y));
+
+      y += 6;
+      members.forEach((m, index) => {
+        if (y > doc.internal.pageSize.getHeight() - 20) {
+          doc.addPage();
+          y = 20;
+        }
+
+        const refundAmt = calculateRefund(m);
+
+        doc.text(toBengaliNumber(index + 1), colX[0], y);
+        doc.text(m.name, colX[1], y);
+        doc.text(`৳ ${toBengaliNumber(m.totalContribution)}`, colX[2], y);
+        doc.text(`৳ ${toBengaliNumber(refundAmt)}`, colX[3], y);
+
+        y += 6;
       });
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#070d1a',
-        windowWidth: 1200, // force wide view so tables won't squish horizontally
-      });
-
-      // Restore original classes
-      containers.forEach((el, index) => {
-        el.className = originalClasses[index];
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      
-      // Add slight padding
-      const margin = 10;
-      const printWidth = pdfWidth - (margin * 2);
-      const printHeight = (canvas.height * printWidth) / canvas.width;
-      
-      let position = margin;
-      let heightLeft = printHeight;
-
-      // First page
-      pdf.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
-      heightLeft -= (pageHeight - margin * 2);
-
-      // Add new pages if content overflows A4 size
-      while (heightLeft > 0) {
-        // Adjust position negative to display next chunk
-        position = heightLeft - printHeight - margin; 
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
-        heightLeft -= (pageHeight - margin * 2);
-      }
-
-      pdf.save(`iftar-mahfil-hisab-${refundType}.pdf`);
+      doc.save(`iftar-mahfil-hisab-${refundType}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('পিডিএফ তৈরি বার্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।');
