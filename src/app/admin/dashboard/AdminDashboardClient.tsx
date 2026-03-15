@@ -18,7 +18,6 @@ import {
   updateMember,
 } from '@/actions/data';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import {
   Moon, Star, LogOut, CalendarDays, Users, HandCoins,
   Receipt, TrendingUp, Plus, Trash2, Check, X, Loader2,
@@ -763,52 +762,52 @@ function SummaryTab({ summary, members }: { summary: Summary; members: Member[] 
           onClick={async () => {
             setIsDownloading(true);
             try {
-              const element = document.getElementById('admin-pdf-content');
-              if (!element) return;
+              const doc = new jsPDF('p', 'mm', 'a4');
+              const margin = 14;
+              let y = 22;
 
-              const containers = element.querySelectorAll('.overflow-x-auto');
-              const originalClasses: string[] = [];
-              
-              containers.forEach((el) => {
-                originalClasses.push(el.className);
-                el.className = el.className.replace('overflow-x-auto', '');
+              doc.setFontSize(16);
+              doc.text('ইফতার মাহফিল হিসাব', margin, y);
+
+              y += 8;
+              doc.setFontSize(11);
+              doc.text(`মোট জমা: ৳ ${toBn(summary.totalCollected)}`, margin, y);
+              doc.text(`মোট খরচ: ৳ ${toBn(summary.totalExpense)}`, margin + 90, y);
+
+              y += 7;
+              doc.text(`অবশিষ্ট: ৳ ${toBn(summary.remaining)}`, margin, y);
+              doc.text(`সদস্য সংখ্যা: ${toBn(summary.memberCount)}`, margin + 90, y);
+
+              y += 12;
+              doc.setFontSize(12);
+              doc.text('সদস্যদের বিস্তারিত', margin, y);
+
+              y += 8;
+              doc.setFontSize(10);
+              const headerX = [margin, 22, 90, 124, 158];
+              const headers = ['#', 'নাম', 'জমাকৃত', 'ফেরত', 'নেট'];
+              headers.forEach((t, i) => doc.text(t, headerX[i], y));
+
+              y += 6;
+              members.forEach((m, idx) => {
+                if (y > 280) {
+                  doc.addPage();
+                  y = 22;
+                }
+
+                const refundAmt = calculateRefund(m);
+                const net = refundAmt - m.totalContribution;
+
+                doc.text(toBn(idx + 1), headerX[0], y);
+                doc.text(m.name, headerX[1], y);
+                doc.text(`৳ ${toBn(m.totalContribution)}`, headerX[2], y);
+                doc.text(`৳ ${toBn(refundAmt)}`, headerX[3], y);
+                doc.text(`${net >= 0 ? '+' : '-'}৳ ${toBn(Math.abs(net))}`, headerX[4], y);
+
+                y += 6;
               });
 
-              const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#070d1a',
-                windowWidth: 1200,
-              });
-
-              containers.forEach((el, index) => {
-                el.className = originalClasses[index];
-              });
-
-              const imgData = canvas.toDataURL('image/png');
-              const pdf = new jsPDF('p', 'mm', 'a4');
-              
-              const pdfWidth = pdf.internal.pageSize.getWidth();
-              const pageHeight = pdf.internal.pageSize.getHeight();
-              
-              const margin = 10;
-              const printWidth = pdfWidth - (margin * 2);
-              const printHeight = (canvas.height * printWidth) / canvas.width;
-              
-              let position = margin;
-              let heightLeft = printHeight;
-
-              pdf.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
-              heightLeft -= (pageHeight - margin * 2);
-
-              while (heightLeft > 0) {
-                position = heightLeft - printHeight - margin; 
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
-                heightLeft -= (pageHeight - margin * 2);
-              }
-
-              pdf.save(`admin-hisab-${refundType}.pdf`);
+              doc.save(`admin-hisab-${refundType}.pdf`);
             } catch (error) {
               console.error('Error generating PDF:', error);
               alert('পিডিএফ তৈরি বার্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।');
