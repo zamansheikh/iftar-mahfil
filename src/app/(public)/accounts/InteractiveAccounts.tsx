@@ -1,9 +1,8 @@
 'use client';
 
+// Imports updated
 import { useState } from 'react';
-import { Receipt, Users, Download, Loader2 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import { loadNotoSansBengaliFont } from '@/lib/pdf';
+import { Receipt, Users, Download } from 'lucide-react';
 
 function toBengaliNumber(n: number | string): string {
   const d = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
@@ -52,7 +51,6 @@ export default function InteractiveAccounts({
   exactDateStr?: string;
 }) {
   const [refundType, setRefundType] = useState<'equal' | 'proportional'>('equal');
-  const [isDownloading, setIsDownloading] = useState(false);
 
   // Determine if event has passed
   const isEventDone = (() => {
@@ -77,82 +75,26 @@ export default function InteractiveAccounts({
     }
   };
 
-  const handleDownloadPDF = async () => {
-    setIsDownloading(true);
-
-    try {
-      await loadNotoSansBengaliFont();
-
-      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-      doc.setFont('NotoSansBengali');
-
-      const margin = 14;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const usableWidth = pageWidth - margin * 2;
-      let y = 18;
-
-      doc.setFontSize(16);
-      doc.text('ইফতার মাহফিল হিসাব-নিকাশ', margin, y);
-
-      y += 8;
-      doc.setFontSize(10);
-      doc.text(`মোট জমা: ৳ ${toBengaliNumber(summary.totalCollected)}`, margin, y);
-      doc.text(`মোট খরচ: ৳ ${toBengaliNumber(summary.totalExpense)}`, margin + usableWidth / 2, y);
-
-      y += 6;
-      doc.text(`অবশিষ্ট: ৳ ${toBengaliNumber(summary.remaining)}`, margin, y);
-      doc.text(`সদস্য সংখ্যা: ${toBengaliNumber(summary.memberCount)}`, margin + usableWidth / 2, y);
-
-      y += 12;
-      doc.setFontSize(11);
-      doc.text('সদস্যদের চাঁদার তালিকা', margin, y);
-
-      y += 8;
-      doc.setFontSize(9);
-
-      const headers = ['#', 'নাম', 'জমাকৃত', 'ফেরত'];
-      const colWidths = [12, usableWidth * 0.4, usableWidth * 0.25, usableWidth * 0.25];
-      const colX = [
-        margin,
-        margin + colWidths[0],
-        margin + colWidths[0] + colWidths[1],
-        margin + colWidths[0] + colWidths[1] + colWidths[2],
-      ];
-
-      headers.forEach((text, idx) => doc.text(text, colX[idx], y));
-
-      y += 6;
-      members.forEach((m, index) => {
-        if (y > doc.internal.pageSize.getHeight() - 20) {
-          doc.addPage();
-          y = 20;
-        }
-
-        const refundAmt = calculateRefund(m);
-
-        doc.text(toBengaliNumber(index + 1), colX[0], y);
-        doc.text(m.name, colX[1], y);
-        doc.text(`৳ ${toBengaliNumber(m.totalContribution)}`, colX[2], y);
-        doc.text(`৳ ${toBengaliNumber(refundAmt)}`, colX[3], y);
-
-        y += 6;
-      });
-
-      doc.save(`iftar-mahfil-hisab-${refundType}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('পিডিএফ তৈরি বার্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।');
-    } finally {
-      setIsDownloading(false);
-    }
+  const handleDownloadPDF = () => {
+    window.print();
   };
 
   return (
-    <div id="pdf-content" className="p-4 sm:p-0">
+    <div id="pdf-content" className="p-4 sm:p-0 printable-area">
+      {/* Added specifically for print mode */}
+      <div className="hidden print-header">
+        <h1>ইফতার মাহফিল হিসাব-নিকাশ</h1>
+        <p>
+          মোট জমা: ৳ {toBengaliNumber(summary.totalCollected)} | 
+          মোট খরচ: ৳ {toBengaliNumber(summary.totalExpense)} | 
+          অবশিষ্ট: ৳ {toBengaliNumber(summary.remaining)}
+        </p>
+      </div>
+
       {/* Refund Banner and Controls */}
       {summary.remaining > 0 && validMembers.length > 0 && (
         <div className="mb-8 space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0d1826] border border-white/10 rounded-2xl p-4 data-html2canvas-ignore">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0d1826] border border-white/10 rounded-2xl p-4 no-print">
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-gray-300">ফেরত হিসাবের ধরণ:</span>
               <div className="flex bg-white/5 rounded-xl p-1">
@@ -180,11 +122,10 @@ export default function InteractiveAccounts({
             </div>
             <button
               onClick={handleDownloadPDF}
-              disabled={isDownloading}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-yellow-500/30 text-yellow-400 text-sm font-medium hover:bg-yellow-500/10 transition-colors w-full sm:w-auto justify-center disabled:opacity-50"
             >
-              {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {isDownloading ? 'পিডিএফ তৈরি হচ্ছে...' : 'পিডিএফ ডাউনলোড'}
+              <Download className="w-4 h-4" />
+              পিডিএফ ডাউনলোড (Print)
             </button>
           </div>
 

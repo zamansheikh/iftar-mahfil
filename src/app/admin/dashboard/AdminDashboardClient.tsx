@@ -17,12 +17,11 @@ import {
   updateExpense,
   updateMember,
 } from '@/actions/data';
-import jsPDF from 'jspdf';
 import {
   Moon, Star, LogOut, CalendarDays, Users, HandCoins,
   Receipt, TrendingUp, Plus, Trash2, Check, X, Loader2,
-  AlertCircle, CheckCircle, Clock, ChevronRight, Edit,
-  RotateCcw, Wallet, Download
+ CheckCircle, Edit,
+ Wallet, Download
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -694,9 +693,8 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
 
 // ─── Tab: Summary ─────────────────────────────────────────────────────────────
 
-function SummaryTab({ summary, members }: { summary: Summary; members: Member[] }) {
+function SummaryTab({ summary, members, expenses }: { summary: Summary; members: Member[]; expenses: Expense[] }) {
   const [refundType, setRefundType] = useState<'equal' | 'proportional'>('equal');
-  const [isDownloading, setIsDownloading] = useState(false);
 
   const validMembers = members.filter((m) => m.totalContribution >= 1);
   const totalValidContribution = validMembers.reduce((sum, m) => sum + m.totalContribution, 0);
@@ -759,106 +757,89 @@ function SummaryTab({ summary, members }: { summary: Summary; members: Member[] 
         </div>
         
         <button
-          onClick={async () => {
-            setIsDownloading(true);
-            try {
-              const doc = new jsPDF('p', 'mm', 'a4');
-              const margin = 14;
-              let y = 22;
-
-              doc.setFontSize(16);
-              doc.text('ইফতার মাহফিল হিসাব', margin, y);
-
-              y += 8;
-              doc.setFontSize(11);
-              doc.text(`মোট জমা: ৳ ${toBn(summary.totalCollected)}`, margin, y);
-              doc.text(`মোট খরচ: ৳ ${toBn(summary.totalExpense)}`, margin + 90, y);
-
-              y += 7;
-              doc.text(`অবশিষ্ট: ৳ ${toBn(summary.remaining)}`, margin, y);
-              doc.text(`সদস্য সংখ্যা: ${toBn(summary.memberCount)}`, margin + 90, y);
-
-              y += 12;
-              doc.setFontSize(12);
-              doc.text('সদস্যদের বিস্তারিত', margin, y);
-
-              y += 8;
-              doc.setFontSize(10);
-              const headerX = [margin, 22, 90, 124, 158];
-              const headers = ['#', 'নাম', 'জমাকৃত', 'ফেরত', 'নেট'];
-              headers.forEach((t, i) => doc.text(t, headerX[i], y));
-
-              y += 6;
-              members.forEach((m, idx) => {
-                if (y > 280) {
-                  doc.addPage();
-                  y = 22;
-                }
-
-                const refundAmt = calculateRefund(m);
-                const net = refundAmt - m.totalContribution;
-
-                doc.text(toBn(idx + 1), headerX[0], y);
-                doc.text(m.name, headerX[1], y);
-                doc.text(`৳ ${toBn(m.totalContribution)}`, headerX[2], y);
-                doc.text(`৳ ${toBn(refundAmt)}`, headerX[3], y);
-                doc.text(`${net >= 0 ? '+' : '-'}৳ ${toBn(Math.abs(net))}`, headerX[4], y);
-
-                y += 6;
-              });
-
-              doc.save(`admin-hisab-${refundType}.pdf`);
-            } catch (error) {
-              console.error('Error generating PDF:', error);
-              alert('পিডিএফ তৈরি বার্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।');
-            } finally {
-              setIsDownloading(false);
-            }
+          onClick={() => {
+            window.print();
           }}
-          disabled={isDownloading}
-          className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold transition-all no-print"
         >
-          {isDownloading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Download className="w-4 h-4" />
-          )}
-          {isDownloading ? 'ডাউনলোড হচ্ছে...' : 'পিডিএফ ডাউনলোড'}
+          <Download className="w-4 h-4" />
+          পিডিএফ ডাউনলোড (Print)
         </button>
       </div>
 
-      <div id="admin-pdf-content" className="space-y-6">
+      <div id="admin-pdf-content" className="space-y-6 printable-area">
+        {/* Added specifically for print mode */}
+        <div className="hidden print-header">
+          <h1>ইফতার মাহফিল হিসাব-নিকাশ</h1>
+          <p>
+            মোট জমা: ৳ {toBn(summary.totalCollected)} | 
+            মোট খরচ: ৳ {toBn(summary.totalExpense)} | 
+            অবশিষ্ট: ৳ {toBn(summary.remaining)}
+          </p>
+        </div>
+
         {summary.remaining > 0 && validMembers.length > 0 && (
         <div className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 text-center">
             {refundType === 'equal' ? (
-              <p className="text-lg font-bold text-emerald-400">
-                ✅ প্রত্যেক সদস্য (যারা চাঁদা দিয়েছেন) ফেরত পাবেন{' '}
+              <p className="text-lg font-bold text-emerald-400 m-0">
+                 প্রত্যেক সদস্য (যারা চাঁদা দিয়েছেন) ফেরত পাবেন{' '}
                 <span className="text-2xl">
                   ৳ {toBn(Math.floor(summary.remaining / validMembers.length))}
                 </span>{' '}
                 টাকা
               </p>
             ) : (
-              <p className="text-lg font-bold text-emerald-400">
-                ✅ সদস্যরা তাদের জমাকৃত চাঁদার আনুপাতিক হারে ফেরত পাবেন
+              <p className="text-lg font-bold text-emerald-400 m-0">
+                 সদস্যরা তাদের জমাকৃত চাঁদার আনুপাতিক হারে ফেরত পাবেন
               </p>
             )}
         </div>
       )}
 
+      <SectionCard title="খরচের বিস্তারিত">
+        {expenses.length === 0 ? (
+          <p className="text-gray-500 text-sm text-center py-4">কোনো খরচ নেই।</p>
+        ) : (
+          <div className="overflow-x-auto print-overflow-visible">
+            <table className="w-full data-table">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 text-left w-12">#</th>
+                  <th className="px-4 py-3 text-left">বিবরণ</th>
+                  <th className="px-4 py-3 text-left w-32">তারিখ</th>
+                  <th className="px-4 py-3 text-left w-40">খরচকারী</th>
+                  <th className="px-4 py-3 text-right w-32">পরিমাণ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {expenses.map((e, i) => (
+                  <tr key={e._id}>
+                    <td className="px-4 py-3 text-gray-500 text-sm">{toBn(i + 1)}</td>
+                    <td className="px-4 py-3 text-white font-medium">{e.description}</td>
+                    <td className="px-4 py-3 text-gray-400">{new Date(e.date).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                    <td className="px-4 py-3 text-gray-400">{e.spentBy}</td>
+                    <td className="px-4 py-3 text-right text-red-400 font-semibold w-whitespace-nowrap">৳ {toBn(e.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
       <SectionCard title="সদস্যদের বিস্তারিত">
         {members.length === 0 ? (
           <p className="text-gray-500 text-sm text-center py-4">কোনো সদস্য নেই।</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto print-overflow-visible">
             <table className="w-full data-table">
               <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left">#</th>
+                  <th className="px-4 py-3 text-left w-12">#</th>
                   <th className="px-4 py-3 text-left">নাম</th>
-                  <th className="px-4 py-3 text-right">জমাকৃত</th>
-                  <th className="px-4 py-3 text-right">ফেরত পাবেন</th>
-                  <th className="px-4 py-3 text-right">নেট (ফেরত − ব্যক্তিগত)</th>
+                  <th className="px-4 py-3 text-right w-32">জমাকৃত</th>
+                  <th className="px-4 py-3 text-right w-32">ফেরত পাবেন</th>
+                  <th className="px-4 py-3 text-right w-40">নেট (ফেরত − ব্যক্তিগত)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -978,7 +959,7 @@ export default function AdminDashboardClient({
         {activeTab === 'members' && <MembersTab members={members} />}
         {activeTab === 'pending' && <PendingTab contributions={pendingContributions} />}
         {activeTab === 'expenses' && <ExpensesTab expenses={expenses} />}
-        {activeTab === 'summary' && <SummaryTab summary={summary} members={members} />}
+        {activeTab === 'summary' && <SummaryTab summary={summary} members={members} expenses={expenses} />}
       </div>
     </div>
   );

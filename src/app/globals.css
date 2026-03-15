@@ -244,3 +244,140 @@ select:focus {
 }
 
 }
+
+@layer base {
+  @media print {
+    @page { margin: 15mm; }
+    
+    body {
+      background: white !important;
+      color: black !important;
+      font-size: 11pt;
+    }
+    
+    body * {
+      visibility: hidden;
+    }
+    
+    .printable-area, .printable-area * {
+      visibility: visible;
+    }
+
+    .printable-area {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .print-overflow-visible {
+      overflow: visible !important;
+    }
+
+    .no-print, .no-print * {
+      display: none !important;
+      height: 0;
+      width: 0;
+    }
+
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color: black !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    /* Print header explicitly */
+    .print-header {
+      display: block !important;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #ccc;
+      text-align: center;
+      visibility: visible;
+    }
+    .print-header h1 {
+      font-size: 20pt;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .print-header p {
+      font-size: 14pt;
+      color: #333 !important;
+      font-weight: 600;
+    }
+
+    /* Keep table borders visible and distinct in print */
+    table {
+      border-collapse: collapse !important;
+      width: 100% !important;
+      margin-bottom: 20px !important;
+    }
+    th, td {
+      border: 1px solid #999 !important;
+      padding: 10px !important;
+      text-align: left;
+    }
+    th {
+      background-color: #e5e7eb !important;
+      font-weight: bold !important;
+      color: black !important;
+    }
+
+    
+    .data-table th, .data-table td {
+      font-size: 11pt !important;
+    }
+
+    h2, h3, .text-lg, .text-xl {
+      color: black !important;
+      margin-top: 15px !important;
+      margin-bottom: 10px !important;
+      font-size: 16pt !important;
+      font-weight: bold !important;
+    }
+    
+    /* Ensure summary cards print correctly */
+    .glass-card {
+      border: 1px solid #ccc !important;
+      background: #f9fafb !important;
+      break-inside: avoid;
+    }
+    
+    /* Utility forcing colors to dark in print, removing backgrounds */
+    .text-white, .text-gray-400, .text-gray-500, .text-emerald-400, .text-red-400, .text-yellow-400 {
+      color: black !important;
+    }
+    
+    /* Prevent cutting rows */
+    tr {
+      break-inside: avoid;
+    }
+
+    /* Print only the printable-area, nothing else */
+    body {
+      background: white !important;
+    }
+    
+    body * {
+      visibility: hidden;
+    }
+
+    .printable-area, .printable-area * {
+      visibility: visible;
+    }
+
+    .printable-area {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+  }
+}
