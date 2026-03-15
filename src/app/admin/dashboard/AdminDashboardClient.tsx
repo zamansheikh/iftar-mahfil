@@ -14,13 +14,16 @@ import {
   rejectContribution,
   addExpense,
   deleteExpense,
+  updateExpense,
   updateMember,
 } from '@/actions/data';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import {
   Moon, Star, LogOut, CalendarDays, Users, HandCoins,
   Receipt, TrendingUp, Plus, Trash2, Check, X, Loader2,
   AlertCircle, CheckCircle, Clock, ChevronRight, Edit,
-  RotateCcw, Wallet
+  RotateCcw, Wallet, Download
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -131,6 +134,7 @@ function EventTab({ eventInfo }: { eventInfo: EventInfo }) {
 // ─── Tab: Members ─────────────────────────────────────────────────────────────
 
 function MembersTab({ members }: { members: Member[] }) {
+  const [isAddingMember, setIsAddingMember] = useState(false);
   const [addState, addFormAction] = useActionState(addMember, null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [updateState, updateFormAction] = useActionState(updateMember, null);
@@ -138,7 +142,10 @@ function MembersTab({ members }: { members: Member[] }) {
 
   // Using standard state update for now, but handle success trigger correctly
   useEffect(() => {
-    if (addState?.success) { toast.success(addState.success); }
+    if (addState?.success) { 
+        toast.success(addState.success); 
+        setIsAddingMember(false);
+    }
     if (addState?.error) toast.error(addState.error);
   }, [addState]);
 
@@ -163,36 +170,84 @@ function MembersTab({ members }: { members: Member[] }) {
 
   return (
     <div className="space-y-6">
-      <SectionCard title="নতুন সদস্য যোগ করুন">
-        <form action={addFormAction} className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            name="name"
-            required
-            placeholder="সদস্যের নাম"
-            className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-          />
-          <input
-            type="text"
-            name="alternativeName"
-            placeholder="ইংরেজিতে নাম (ঐচ্ছিক)"
-            className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-          />
-          <input
-            type="tel"
-            name="phone"
-            placeholder="ফোন নম্বর (ঐচ্ছিক)"
-            className="w-full sm:w-auto flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-          />
-          <input
-            type="number"
-            name="totalContribution"
-            placeholder="চাঁদা (ঐচ্ছিক)"
-            className="w-full sm:w-32 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-          />
-          <SaveBtn label="যোগ করুন" />
-        </form>
-      </SectionCard>
+      <div className="flex justify-between items-center bg-[#070d1a] border border-white/5 rounded-2xl p-5 mb-4 shadow-sm">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <Users className="w-5 h-5 text-emerald-400" />
+          সদস্য ব্যবস্থাপনা
+        </h2>
+        <button
+          onClick={() => setIsAddingMember(!isAddingMember)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold rounded-xl transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          নতুন সদস্য
+        </button>
+      </div>
+
+      {isAddingMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#070d1a] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2">
+              <span className="w-1.5 h-5 rounded-full bg-emerald-500 block" />
+              নতুন সদস্য যোগ করুন
+            </h3>
+            <button
+              onClick={() => setIsAddingMember(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              type="button"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <form action={addFormAction} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">নাম</label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  placeholder="সদস্যের নাম"
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">ইংরেজিতে নাম</label>
+                <input
+                  type="text"
+                  name="alternativeName"
+                  placeholder="ইংরেজিতে নাম (ঐচ্ছিক)"
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">ফোন নম্বর</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="ফোন নম্বর (ঐচ্ছিক)"
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">জমাকৃত চাঁদা (৳)</label>
+                <input
+                  type="number"
+                  name="totalContribution"
+                  placeholder="চাঁদা (ঐচ্ছিক)"
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Btn type="button" onClick={() => setIsAddingMember(false)} className="flex-1 justify-center border border-white/10 text-gray-400 hover:border-white/20">
+                  বাতিল
+                </Btn>
+                <div className="flex-1">
+                  <SaveBtn label="যোগ করুন" />
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {editingId && editingMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -400,13 +455,27 @@ function PendingTab({ contributions }: { contributions: PendingContribution[] })
 // ─── Tab: Expenses ────────────────────────────────────────────────────────────
 
 function ExpensesTab({ expenses }: { expenses: Expense[] }) {
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [state, formAction] = useActionState(addExpense, null);
+  const [updateState, updateFormAction] = useActionState(updateExpense, null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (state?.success) toast.success(state.success);
+    if (state?.success) {
+        toast.success(state.success);
+        setIsAddingExpense(false);
+    }
     if (state?.error) toast.error(state.error);
   }, [state]);
+
+  useEffect(() => {
+    if (updateState?.success) {
+        toast.success(updateState.success);
+        setEditingExpenseId(null);
+    }
+    if (updateState?.error) toast.error(updateState.error);
+  }, [updateState]);
 
   const handleDelete = (id: string, desc: string) => {
     if (!confirm(`"${desc}" খরচটি মুছে ফেলবেন?`)) return;
@@ -418,45 +487,161 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
 
   const today = new Date().toISOString().split('T')[0];
 
+  const editingExpense = expenses.find((e) => e._id === editingExpenseId);
+
   return (
     <div className="space-y-6">
-      <SectionCard title="নতুন খরচ যোগ করুন">
-        <form action={formAction} className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            name="description"
-            required
-            placeholder="খরচের বিবরণ"
-            className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-          />
-          <input
-            type="text"
-            name="spentBy"
-            required
-            placeholder="কে খরচ করেছে?"
-            className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-          />
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 text-sm">৳</span>
-            <input
-              type="number"
-              name="amount"
-              required
-              min="0"
-              placeholder="পরিমাণ"
-              className="w-full sm:w-32 bg-[#0d1826] border border-white/10 rounded-xl pl-7 pr-3 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-            />
+      <div className="flex justify-between items-center bg-[#070d1a] border border-white/5 rounded-2xl p-5 mb-4 shadow-sm">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <Receipt className="w-5 h-5 text-emerald-400" />
+          খরচ ব্যবস্থাপনা
+        </h2>
+        <button
+          onClick={() => setIsAddingExpense(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold rounded-xl transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          নতুন খরচ
+        </button>
+      </div>
+
+      {isAddingExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#070d1a] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2">
+              <span className="w-1.5 h-5 rounded-full bg-emerald-500 block" />
+              নতুন খরচ যোগ করুন
+            </h3>
+            <button
+              onClick={() => setIsAddingExpense(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              type="button"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <form action={formAction} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">বিবরণ</label>
+                <input
+                  type="text"
+                  name="description"
+                  required
+                  placeholder="খরচের বিবরণ"
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">পরিমাণ (৳)</label>
+                <input
+                  type="number"
+                  name="amount"
+                  required
+                  min="0"
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">তারিখ</label>
+                <input
+                  type="date"
+                  name="date"
+                  defaultValue={today}
+                  required
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">কে খরচ করেছে?</label>
+                <input
+                  type="text"
+                  name="spentBy"
+                  required
+                  placeholder="নাম"
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Btn type="button" onClick={() => setIsAddingExpense(false)} className="flex-1 justify-center border border-white/10 text-gray-400 hover:border-white/20">
+                  বাতিল
+                </Btn>
+                <div className="flex-1">
+                  <SaveBtn label="যোগ করুন" />
+                </div>
+              </div>
+            </form>
           </div>
-          <input
-            type="date"
-            name="date"
-            defaultValue={today}
-            required
-            className="bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-          />
-          <SaveBtn label="যোগ করুন" />
-        </form>
-      </SectionCard>
+        </div>
+      )}
+
+      {editingExpenseId && editingExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#070d1a] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2">
+              <span className="w-1.5 h-5 rounded-full bg-blue-500 block" />
+              খরচ সম্পাদনা করুন
+            </h3>
+            <button
+              onClick={() => setEditingExpenseId(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              type="button"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <form action={updateFormAction} className="space-y-4">
+              <input type="hidden" name="id" value={editingExpenseId} />
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">বিবরণ</label>
+                <input
+                  type="text"
+                  name="description"
+                  defaultValue={editingExpense.description}
+                  required
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">পরিমাণ (৳)</label>
+                <input
+                  type="number"
+                  name="amount"
+                  defaultValue={editingExpense.amount}
+                  required
+                  min="0"
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">তারিখ</label>
+                <input
+                  type="date"
+                  name="date"
+                  defaultValue={new Date(editingExpense.date).toISOString().split('T')[0]}
+                  required
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">কে খরচ করেছে?</label>
+                <input
+                  type="text"
+                  name="spentBy"
+                  defaultValue={editingExpense.spentBy}
+                  required
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Btn type="button" onClick={() => setEditingExpenseId(null)} className="flex-1 justify-center border border-white/10 text-gray-400 hover:border-white/20">
+                  বাতিল
+                </Btn>
+                <div className="flex-1">
+                  <SaveBtn label="আপডেট" />
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <SectionCard title={`খরচের তালিকা (${toBn(expenses.length)}টি)`}>
         {expenses.length === 0 ? (
@@ -471,6 +656,9 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-bold text-red-400">৳ {toBn(e.amount)}</span>
+                  <Btn onClick={() => setEditingExpenseId(e._id)} disabled={isPending} className="border border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                    <Edit className="w-3.5 h-3.5" />
+                  </Btn>
                   <Btn onClick={() => handleDelete(e._id, e.description)} disabled={isPending} className="border border-red-500/30 text-red-400 hover:bg-red-500/10">
                     <Trash2 className="w-3.5 h-3.5" />
                   </Btn>
@@ -492,6 +680,7 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
 
 function SummaryTab({ summary, members }: { summary: Summary; members: Member[] }) {
   const [refundType, setRefundType] = useState<'equal' | 'proportional'>('equal');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const validMembers = members.filter((m) => m.totalContribution >= 1);
   const totalValidContribution = validMembers.reduce((sum, m) => sum + m.totalContribution, 0);
@@ -526,32 +715,104 @@ function SummaryTab({ summary, members }: { summary: Summary; members: Member[] 
         ))}
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex bg-white/5 rounded-xl p-1">
-          <button
-            onClick={() => setRefundType('equal')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              refundType === 'equal'
-                ? 'bg-emerald-500 text-black shadow-md'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            সমানভাবে
-          </button>
-          <button
-            onClick={() => setRefundType('proportional')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              refundType === 'proportional'
-                ? 'bg-emerald-500 text-black shadow-md'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            জমাকৃত হার অনুযায়ী
-          </button>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0d1826] border border-white/10 rounded-2xl p-4 data-html2canvas-ignore">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-300">ফেরত হিসাবের ধরণ:</span>
+          <div className="flex bg-white/5 rounded-xl p-1">
+            <button
+              onClick={() => setRefundType('equal')}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                refundType === 'equal'
+                  ? 'bg-emerald-500 text-black shadow-md'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              সমানভাবে
+            </button>
+            <button
+              onClick={() => setRefundType('proportional')}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                refundType === 'proportional'
+                  ? 'bg-emerald-500 text-black shadow-md'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              জমাকৃত হার অনুযায়ী
+            </button>
+          </div>
         </div>
+        
+        <button
+          onClick={async () => {
+            setIsDownloading(true);
+            try {
+              const element = document.getElementById('admin-pdf-content');
+              if (!element) return;
+
+              const containers = element.querySelectorAll('.overflow-x-auto');
+              const originalClasses: string[] = [];
+              
+              containers.forEach((el) => {
+                originalClasses.push(el.className);
+                el.className = el.className.replace('overflow-x-auto', '');
+              });
+
+              const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#070d1a',
+                windowWidth: 1200,
+              });
+
+              containers.forEach((el, index) => {
+                el.className = originalClasses[index];
+              });
+
+              const imgData = canvas.toDataURL('image/png');
+              const pdf = new jsPDF('p', 'mm', 'a4');
+              
+              const pdfWidth = pdf.internal.pageSize.getWidth();
+              const pageHeight = pdf.internal.pageSize.getHeight();
+              
+              const margin = 10;
+              const printWidth = pdfWidth - (margin * 2);
+              const printHeight = (canvas.height * printWidth) / canvas.width;
+              
+              let position = margin;
+              let heightLeft = printHeight;
+
+              pdf.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
+              heightLeft -= (pageHeight - margin * 2);
+
+              while (heightLeft > 0) {
+                position = heightLeft - printHeight - margin; 
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
+                heightLeft -= (pageHeight - margin * 2);
+              }
+
+              pdf.save(`admin-hisab-${refundType}.pdf`);
+            } catch (error) {
+              console.error('Error generating PDF:', error);
+              alert('পিডিএফ তৈরি বার্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।');
+            } finally {
+              setIsDownloading(false);
+            }
+          }}
+          disabled={isDownloading}
+          className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {isDownloading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4" />
+          )}
+          {isDownloading ? 'ডাউনলোড হচ্ছে...' : 'পিডিএফ ডাউনলোড'}
+        </button>
       </div>
 
-      {summary.remaining > 0 && validMembers.length > 0 && (
+      <div id="admin-pdf-content" className="space-y-6">
+        {summary.remaining > 0 && validMembers.length > 0 && (
         <div className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 text-center">
             {refundType === 'equal' ? (
               <p className="text-lg font-bold text-emerald-400">
@@ -605,6 +866,7 @@ function SummaryTab({ summary, members }: { summary: Summary; members: Member[] 
           </div>
         )}
       </SectionCard>
+      </div>
     </div>
   );
 }

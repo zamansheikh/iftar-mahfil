@@ -233,7 +233,27 @@ export async function addExpense(_prev: unknown, formData: FormData) {
   revalidatePath('/accounts');
   revalidatePath('/admin/dashboard');
   revalidatePath('/');
-  return { success: 'খরচ যোগ করা হয়েছে।' };
+  return { success: 'খরচ যোগ করা হয়েছে。' };
+}
+
+export async function updateExpense(_prev: unknown, formData: FormData) {
+  await requireAdmin();
+  await dbConnect();
+  const id = formData.get('id') as string;
+  const data = {
+    description: formData.get('description') as string,
+    amount: Number(formData.get('amount')),
+    date: formData.get('date') as string,
+    spentBy: formData.get('spentBy') as string,
+  };
+  const parsed = expenseSchema.safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await Expense.findByIdAndUpdate(id, { ...parsed.data, date: new Date(parsed.data.date) });
+  revalidatePath('/accounts');
+  revalidatePath('/admin/dashboard');
+  revalidatePath('/');
+  return { success: 'খরচ আপডেট করা হয়েছে।', timestamp: Date.now() };
 }
 
 export async function deleteExpense(id: string) {
