@@ -136,13 +136,17 @@ function MembersTab({ members }: { members: Member[] }) {
   const [updateState, updateFormAction] = useActionState(updateMember, null);
   const [isPending, startTransition] = useTransition();
 
+  // Using standard state update for now, but handle success trigger correctly
   useEffect(() => {
     if (addState?.success) { toast.success(addState.success); }
     if (addState?.error) toast.error(addState.error);
   }, [addState]);
 
   useEffect(() => {
-    if (updateState?.success) { toast.success(updateState.success); setEditingId(null); }
+    if (updateState?.success) { 
+      toast.success(updateState.success); 
+      setEditingId(null); 
+    }
     if (updateState?.error) toast.error(updateState.error);
   }, [updateState]);
 
@@ -629,6 +633,17 @@ export default function AdminDashboardClient({
   summary: Summary;
 }) {
   const [activeTab, setActiveTab] = useState('summary');
+  
+  useEffect(() => {
+    const saved = localStorage.getItem('adminDashboardTab');
+    if (saved) setActiveTab(saved);
+  }, []);
+
+  const handleTabChange = (id: string) => {
+    setActiveTab(id);
+    localStorage.setItem('adminDashboardTab', id);
+  };
+
   const pendingCount = pendingContributions.filter((c) => c.status === 'pending').length;
 
   return (
@@ -662,7 +677,7 @@ export default function AdminDashboardClient({
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`relative inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 activeTab === tab.id
                   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'

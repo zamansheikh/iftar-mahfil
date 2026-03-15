@@ -73,9 +73,9 @@ export async function addMember(_prev: unknown, formData: FormData) {
   await requireAdmin();
   await dbConnect();
   const data = {
-    name: formData.get('name') as string,
-    alternativeName: formData.get('alternativeName') as string,
-    phone: formData.get('phone') as string,
+    name: formData.get('name')?.toString().trim(),
+    alternativeName: formData.get('alternativeName')?.toString().trim() || '',
+    phone: formData.get('phone')?.toString().trim() || '',
     totalContribution: Number(formData.get('totalContribution')) || 0,
   };
   const parsed = memberSchema.safeParse(data);
@@ -87,7 +87,7 @@ export async function addMember(_prev: unknown, formData: FormData) {
   await Member.create(parsed.data);
   revalidatePath('/members');
   revalidatePath('/admin/dashboard');
-  return { success: 'সদস্য যোগ করা হয়েছে।' };
+  return { success: 'সদস্য যোগ করা হয়েছে।', timestamp: Date.now() };
 }
 
 export async function updateMember(_prev: unknown, formData: FormData) {
@@ -95,9 +95,9 @@ export async function updateMember(_prev: unknown, formData: FormData) {
   await dbConnect();
   const id = formData.get('id') as string;
   const data = {
-    name: formData.get('name') as string,
-    alternativeName: formData.get('alternativeName') as string,
-    phone: formData.get('phone') as string,
+    name: formData.get('name')?.toString().trim(),
+    alternativeName: formData.get('alternativeName')?.toString().trim() || '',
+    phone: formData.get('phone')?.toString().trim() || '',
     totalContribution: Number(formData.get('totalContribution')) || 0,
   };
   const parsed = memberSchema.safeParse(data);
@@ -106,7 +106,7 @@ export async function updateMember(_prev: unknown, formData: FormData) {
   await Member.findByIdAndUpdate(id, parsed.data);
   revalidatePath('/members');
   revalidatePath('/admin/dashboard');
-  return { success: 'সদস্য তথ্য আপডেট হয়েছে।' };
+  return { success: 'সদস্য তথ্য আপডেট হয়েছে।', timestamp: Date.now() };
 }
 
 export async function deleteMember(id: string) {
