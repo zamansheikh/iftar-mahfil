@@ -36,23 +36,26 @@ export async function updateEventInfo(_prev: unknown, formData: FormData) {
   const data = {
     title: formData.get('title') as string,
     date: formData.get('date') as string,
-    exactDate: formData.get('exactDate') as string,
+    exactDate: (formData.get('exactDate') as string) || '',
     time: formData.get('time') as string,
     location: formData.get('location') as string,
     description: formData.get('description') as string,
   };
+  console.log('[updateEventInfo] exactDate received:', JSON.stringify(data.exactDate));
   const parsed = eventInfoSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const finalData: any = { ...parsed.data };
-  if (finalData.exactDate) {
-    finalData.exactDate = new Date(finalData.exactDate);
+  const { exactDate, ...restData } = parsed.data;
+  const updateOps: any = { $set: restData };
+  if (exactDate && exactDate.trim() !== '') {
+    updateOps.$set.exactDate = new Date(exactDate);
   } else {
-    delete finalData.exactDate;
+    updateOps.$unset = { exactDate: 1 };
   }
 
-  await EventInfo.findOneAndUpdate({}, finalData, { upsert: true });
+  await EventInfo.findOneAndUpdate({}, updateOps, { upsert: true });
   revalidatePath('/');
+  revalidatePath('/accounts');
   revalidatePath('/admin/dashboard');
   return { success: 'ইভেন্ট তথ্য সংরক্ষণ হয়েছে।' };
 }

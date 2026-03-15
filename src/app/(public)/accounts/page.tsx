@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { getExpenses, getMembers, getSummary } from '@/actions/data';
+import { getExpenses, getEventInfo, getMembers, getSummary } from '@/actions/data';
 import { Receipt, TrendingDown, Wallet, Users, RotateCcw } from 'lucide-react';
 import SummaryCard from '@/components/SummaryCard';
 import InteractiveAccounts from './InteractiveAccounts';
@@ -17,10 +17,11 @@ function toBengaliNumber(n: number): string {
 
 
 export default async function AccountsPage() {
-  const [expenses, members, summary] = await Promise.all([
+  const [expenses, members, summary, eventInfo] = await Promise.all([
     getExpenses(),
     getMembers(),
     getSummary(),
+    getEventInfo(),
   ]);
 
   return (
@@ -56,7 +57,7 @@ export default async function AccountsPage() {
         />
       </div>
 
-      <InteractiveAccounts summary={summary} expenses={expenses} members={members} />
+      <InteractiveAccounts summary={summary} expenses={expenses} members={members} exactDateStr={eventInfo.exactDate} />
     </div>
   );
 }

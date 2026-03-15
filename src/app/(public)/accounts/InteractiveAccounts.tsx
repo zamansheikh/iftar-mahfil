@@ -43,13 +43,23 @@ export default function InteractiveAccounts({
   summary,
   expenses,
   members,
+  exactDateStr,
 }: {
   summary: Summary;
   expenses: Expense[];
   members: Member[];
+  exactDateStr?: string;
 }) {
   const [refundType, setRefundType] = useState<'equal' | 'proportional'>('equal');
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Determine if event has passed
+  const isEventDone = (() => {
+    if (!exactDateStr) return false;
+    const targetDate = new Date(exactDateStr).getTime();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    return Date.now() > targetDate + oneDayMs;
+  })();
 
   const validMembers = members.filter((m) => m.totalContribution >= 1);
   const totalValidContribution = validMembers.reduce((sum, m) => sum + m.totalContribution, 0);
@@ -194,6 +204,17 @@ export default function InteractiveAccounts({
                 </p>
               </>
             )}
+          </div>
+
+          {/* Dynamic message based on event status */}
+          <div className="p-4 rounded-2xl border border-yellow-500/30 bg-yellow-500/5 text-center">
+            <p className="text-yellow-400 font-semibold text-[15px] sm:text-base">
+              {isEventDone ? (
+                <>🎉 সমস্ত খরচ বাদে অবশিষ্ট আছে ৳ {toBengaliNumber(summary.remaining)} টাকা, যা সদস্যদের মাঝে ফেরত দেওয়া হবে।</>
+              ) : (
+                <>আপাতত সম্ভাব্য হিসাব অনুযায়ী অবশিষ্ট আছে ৳ {toBengaliNumber(summary.remaining)} টাকা। ইভেন্ট শেষ হওয়ার পর আসল হিসাব ও ফেরতযোগ্য অর্থ প্রকাশ করা হবে।</>
+              )}
+            </p>
           </div>
         </div>
       )}

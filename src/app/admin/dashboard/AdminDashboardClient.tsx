@@ -90,6 +90,12 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 function EventTab({ eventInfo }: { eventInfo: EventInfo }) {
   const [state, formAction] = useActionState(updateEventInfo, null);
+  const [exactDateValue, setExactDateValue] = useState(() => {
+    if (!eventInfo.exactDate) return '';
+    const d = new Date(eventInfo.exactDate);
+    const offset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+  });
 
   useEffect(() => {
     if (state?.success) toast.success(state.success);
@@ -117,13 +123,15 @@ function EventTab({ eventInfo }: { eventInfo: EventInfo }) {
           </div>
         ))}
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1.5">আসল সময় (কাউন্টডাউনের জন্য)</label>
+          <label className="block text-xs font-medium text-gray-400 mb-1.5">আসল তারিখ ও সময় (কাউন্টডাউনের জন্য)</label>
           <input
             type="datetime-local"
             name="exactDate"
-            defaultValue={eventInfo.exactDate ? new Date(new Date(eventInfo.exactDate).getTime() - (new Date(eventInfo.exactDate).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''}
+            value={exactDateValue}
+            onChange={(e) => setExactDateValue(e.target.value)}
             className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
           />
+          <p className="text-xs text-gray-500 mt-1">ক্যালেন্ডার থেকে ইভেন্টের সঠিক তারিখ ও সময় নির্বাচন করুন</p>
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-400 mb-1.5">বিবরণ</label>
