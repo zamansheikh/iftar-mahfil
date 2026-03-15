@@ -31,6 +31,7 @@ interface Expense {
   amount: number;
   date: string;
   spentBy: string;
+  isExpended?: boolean;
 }
 
 interface Member {

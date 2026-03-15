@@ -231,21 +231,50 @@ export async function getExpenses() {
   return JSON.parse(JSON.stringify(expenses));
 }
 
+export async function getPublicExpenses() {
+  await dbConnect();
+  const expenses = await Expense.find({ isExpended: true }).sort({ date: -1 }).lean();
+  return JSON.parse(JSON.stringify(expenses));
+}
+
 const expenseSchema = z.object({
   description: z.string().min(1, 'বিবরণ প্রয়োজন'),
   amount: z.number().min(0, 'পরিমাণ সঠিক হতে হবে'),
   date: z.string().min(1, 'তারিখ প্রয়োজন'),
   spentBy: z.string().min(1, 'কে খরচ করেছে তা উল্লেখ করুন'),
+  isExpended: z.boolean(),
 });
+
+function getFormValue(formData: FormData, field: string) {
+  if (formData.has(field)) return formData.get(field);
+  for (const [key, value] of formData.entries()) {
+    if (key.endsWith(`_${field}`)) return value;
+  }
+  return null;
+}
+
+function getFormBoolean(formData: FormData, field: string) {
+  const values = [];
+  if (formData.has(field)) {
+    const v = formData.getAll(field);
+    values.push(...v);
+  }
+  for (const [key, value] of formData.entries()) {
+    if (key.endsWith(`_${field}`)) values.push(value);
+  }
+  return values.includes('true');
+}
 
 export async function addExpense(_prev: unknown, formData: FormData) {
   await requireAdmin();
   await dbConnect();
+  const isExpended = getFormBoolean(formData, 'isExpended');
   const data = {
-    description: formData.get('description') as string,
-    amount: Number(formData.get('amount')),
-    date: formData.get('date') as string,
-    spentBy: formData.get('spentBy') as string,
+    description: getFormValue(formData, 'description') as string,
+    amount: Number(getFormValue(formData, 'amount')),
+    date: getFormValue(formData, 'date') as string,
+    spentBy: getFormValue(formData, 'spentBy') as string,
+    isExpended,
   };
   const parsed = expenseSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -260,21 +289,24 @@ export async function addExpense(_prev: unknown, formData: FormData) {
 export async function updateExpense(_prev: unknown, formData: FormData) {
   await requireAdmin();
   await dbConnect();
-  const id = formData.get('id') as string;
+  const id = getFormValue(formData, 'id') as string;
+  const isExpended = getFormBoolean(formData, 'isExpended');
   const data = {
-    description: formData.get('description') as string,
-    amount: Number(formData.get('amount')),
-    date: formData.get('date') as string,
-    spentBy: formData.get('spentBy') as string,
+    description: getFormValue(formData, 'description') as string,
+    amount: Number(getFormValue(formData, 'amount')),
+    date: getFormValue(formData, 'date') as string,
+    spentBy: getFormValue(formData, 'spentBy') as string,
+    isExpended,
   };
   const parsed = expenseSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
+  console.log('[updateExpense] parsed.data:', parsed.data);
   await Expense.findByIdAndUpdate(id, { ...parsed.data, date: new Date(parsed.data.date) });
   revalidatePath('/accounts');
   revalidatePath('/admin/dashboard');
   revalidatePath('/');
-  return { success: 'খরচ আপডেট করা হয়েছে।', timestamp: Date.now() };
+  return { success: `খরচ আপডেট করা হয়েছে। isExpended=${parsed.data.isExpended}`, timestamp: Date.now() };
 }
 
 export async function deleteExpense(id: string) {
@@ -292,7 +324,7 @@ export async function deleteExpense(id: string) {
 export async function getSummary() {
   await dbConnect();
   const members = await Member.find().lean();
-  const expenses = await Expense.find().lean();
+  const expenses = await Expense.find({ isExpended: true }).lean();
 
   const totalCollected = members.reduce((sum, m) => sum + m.totalContribution, 0);
   const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);

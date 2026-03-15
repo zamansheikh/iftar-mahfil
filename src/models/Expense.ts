@@ -5,6 +5,7 @@ export interface IExpense extends Document {
   amount: number;
   date: Date;
   spentBy: string;
+  isExpended: boolean;
 }
 
 const ExpenseSchema = new Schema<IExpense>(
@@ -13,6 +14,7 @@ const ExpenseSchema = new Schema<IExpense>(
     amount: { type: Number, required: true, min: 0 },
     date: { type: Date, required: true, default: Date.now },
     spentBy: { type: String, required: true, trim: true },
+    isExpended: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
