@@ -745,29 +745,49 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
 
 function SummaryTab({ summary, members, expenses }: { summary: Summary; members: Member[]; expenses: Expense[] }) {
   const [refundType, setRefundType] = useState<'equal' | 'proportional'>('equal');
+  const [includeDrafts, setIncludeDrafts] = useState(false);
+
+  const expendedExpenses = expenses.filter((e) => e.isExpended);
+  const draftExpenses = expenses.filter((e) => !e.isExpended);
+  const expendedTotal = expendedExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const draftTotal = draftExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  const totalExpenseWithDrafts = summary.totalExpense + draftTotal;
+  const remainingWithDrafts = summary.totalCollected - totalExpenseWithDrafts;
 
   const validMembers = members.filter((m) => m.totalContribution >= 1);
   const totalValidContribution = validMembers.reduce((sum, m) => sum + m.totalContribution, 0);
 
   const calculateRefund = (member: Member) => {
     if (member.totalContribution < 1) return 0;
-    if (summary.remaining <= 0) return 0;
+    const remaining = includeDrafts ? remainingWithDrafts : summary.remaining;
+    if (remaining <= 0) return 0;
 
     if (refundType === 'equal') {
-      return validMembers.length > 0 ? Math.floor(summary.remaining / validMembers.length) : 0;
+      return validMembers.length > 0 ? Math.floor(remaining / validMembers.length) : 0;
     } else {
       const ratio = totalValidContribution > 0 ? member.totalContribution / totalValidContribution : 0;
-      return Math.floor(summary.remaining * ratio);
+      return Math.floor(remaining * ratio);
     }
   };
+
+  
+  const displayTotalExpense = includeDrafts ? totalExpenseWithDrafts : summary.totalExpense;
+  const displayRemaining = includeDrafts ? remainingWithDrafts : summary.remaining;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'মোট জমা', value: summary.totalCollected, color: 'text-emerald-400', icon: <TrendingUp className="w-5 h-5" /> },
-          { label: 'মোট খরচ', value: summary.totalExpense, color: 'text-red-400', icon: <Receipt className="w-5 h-5" /> },
-          { label: 'অবশিষ্ট', value: summary.remaining, color: 'text-yellow-400', icon: <Wallet className="w-5 h-5" /> },
+          {
+            label: 'মোট খরচ',
+            value: displayTotalExpense,
+            color: 'text-red-400',
+            icon: <Receipt className="w-5 h-5" />,
+            subtitle: includeDrafts ? 'ড্রাফটসহ' : 'প্রকাশিত',
+          },
+          { label: 'অবশিষ্ট', value: displayRemaining, color: 'text-yellow-400', icon: <Wallet className="w-5 h-5" /> },
           { label: 'সদস্য সংখ্যা', value: summary.memberCount, color: 'text-blue-400', icon: <Users className="w-5 h-5" />, isMember: true },
         ].map((item) => (
           <div key={item.label} className="glass-card rounded-xl border border-white/5 p-4">
@@ -775,35 +795,50 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
             <p className={`text-2xl font-bold ${item.color}`}>
               {item.isMember ? toBn(item.value) : `৳ ${toBn(item.value)}`}
             </p>
+            {item.subtitle ? (
+              <p className="text-xs text-gray-400 mt-1">{item.subtitle}</p>
+            ) : null}
           </div>
         ))}
       </div>
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0d1826] border border-white/10 rounded-2xl p-4 data-html2canvas-ignore no-print">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-300">ফেরত হিসাবের ধরণ:</span>
-          <div className="flex bg-white/5 rounded-xl p-1">
-            <button
-              onClick={() => setRefundType('equal')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                refundType === 'equal'
-                  ? 'bg-emerald-500 text-black shadow-md'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              সমানভাবে
-            </button>
-            <button
-              onClick={() => setRefundType('proportional')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                refundType === 'proportional'
-                  ? 'bg-emerald-500 text-black shadow-md'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              জমাকৃত হার অনুযায়ী
-            </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-300">ফেরত হিসাবের ধরণ:</span>
+            <div className="flex bg-white/5 rounded-xl p-1">
+              <button
+                onClick={() => setRefundType('equal')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  refundType === 'equal'
+                    ? 'bg-emerald-500 text-black shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                সমানভাবে
+              </button>
+              <button
+                onClick={() => setRefundType('proportional')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  refundType === 'proportional'
+                    ? 'bg-emerald-500 text-black shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                জমাকৃত হার অনুযায়ী
+              </button>
+            </div>
           </div>
+
+          <label className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-xs text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeDrafts}
+              onChange={(e) => setIncludeDrafts(e.target.checked)}
+              className="w-4 h-4 rounded border-white/20 text-emerald-500 bg-[#0d1826] cursor-pointer"
+            />
+            ড্রাফটসহ খরচ দেখুন
+          </label>
         </div>
         
         <button
@@ -828,13 +863,13 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
           </p>
         </div>
 
-        {summary.remaining > 0 && validMembers.length > 0 && (
+        {displayRemaining > 0 && validMembers.length > 0 && (
         <div className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 text-center">
             {refundType === 'equal' ? (
               <p className="text-lg font-bold text-emerald-400 m-0">
                  প্রত্যেক সদস্য (যারা চাঁদা দিয়েছেন) ফেরত পাবেন{' '}
                 <span className="text-2xl">
-                  ৳ {toBn(Math.floor(summary.remaining / validMembers.length))}
+                  ৳ {toBn(Math.floor(displayRemaining / validMembers.length))}
                 </span>{' '}
                 টাকা
               </p>
@@ -846,9 +881,9 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
         </div>
       )}
 
-      <SectionCard title="খরচের বিস্তারিত">
-        {expenses.length === 0 ? (
-          <p className="text-gray-500 text-sm text-center py-4">কোনো খরচ নেই।</p>
+      <SectionCard title={`প্রকাশিত খরচ (খরচ হয়েছে) (${toBn(expendedExpenses.length)}টি)`}>
+        {expendedExpenses.length === 0 ? (
+          <p className="text-gray-500 text-sm text-center py-4">কোনো প্রকাশিত খরচ নেই।</p>
         ) : (
           <div className="overflow-x-auto print-overflow-visible">
             <table className="w-full data-table">
@@ -862,7 +897,7 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {expenses.map((e, i) => (
+                {expendedExpenses.map((e, i) => (
                   <tr key={e._id}>
                     <td className="px-4 py-3 text-gray-500 text-sm">{toBn(i + 1)}</td>
                     <td className="px-4 py-3 text-white font-medium">{e.description}</td>
@@ -873,6 +908,45 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
                 ))}
               </tbody>
             </table>
+            <div className="flex justify-between pt-3 border-t border-white/10">
+              <span className="text-sm font-bold text-gray-400">মোট প্রকাশিত খরচ</span>
+              <span className="text-sm font-bold text-red-400">৳ {toBn(expendedTotal)}</span>
+            </div>
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard title={`ড্রাফট / তালিকাভুক্ত খরচ (${toBn(draftExpenses.length)}টি)`}>
+        {draftExpenses.length === 0 ? (
+          <p className="text-gray-500 text-sm text-center py-4">কোনো তালিকাভুক্ত/ড্রাফট খরচ নেই।</p>
+        ) : (
+          <div className="overflow-x-auto print-overflow-visible">
+            <table className="w-full data-table">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 text-left w-12">#</th>
+                  <th className="px-4 py-3 text-left">বিবরণ</th>
+                  <th className="px-4 py-3 text-left w-32">তারিখ</th>
+                  <th className="px-4 py-3 text-left w-40">খরচকারী</th>
+                  <th className="px-4 py-3 text-right w-32">পরিমাণ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {draftExpenses.map((e, i) => (
+                  <tr key={e._id}>
+                    <td className="px-4 py-3 text-gray-500 text-sm">{toBn(i + 1)}</td>
+                    <td className="px-4 py-3 text-white font-medium">{e.description}</td>
+                    <td className="px-4 py-3 text-gray-400">{new Date(e.date).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                    <td className="px-4 py-3 text-gray-400">{e.spentBy}</td>
+                    <td className="px-4 py-3 text-right text-red-400 font-semibold whitespace-nowrap">৳ {toBn(e.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="flex justify-between pt-3 border-t border-white/10">
+              <span className="text-sm font-bold text-gray-400">মোট তালিকাভুক্ত খরচ</span>
+              <span className="text-sm font-bold text-red-400">৳ {toBn(draftTotal)}</span>
+            </div>
           </div>
         )}
       </SectionCard>
@@ -889,22 +963,17 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
                   <th className="px-4 py-3 text-left">নাম</th>
                   <th className="px-4 py-3 text-right w-32">জমাকৃত</th>
                   <th className="px-4 py-3 text-right w-32">ফেরত পাবেন</th>
-                  <th className="px-4 py-3 text-right w-40">নেট (ফেরত − ব্যক্তিগত)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {members.map((m, i) => {
                   const refundAmt = calculateRefund(m);
-                  const net = refundAmt - m.totalContribution;
                   return (
                     <tr key={m._id}>
                       <td className="px-4 py-3 text-gray-500 text-sm">{toBn(i + 1)}</td>
                       <td className="px-4 py-3 text-white font-medium">{m.name}</td>
                       <td className="px-4 py-3 text-right text-yellow-400 font-semibold">৳ {toBn(m.totalContribution)}</td>
                       <td className="px-4 py-3 text-right text-emerald-400 font-semibold">৳ {toBn(refundAmt)}</td>
-                      <td className={`px-4 py-3 text-right font-bold ${net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {net >= 0 ? '+' : ''}৳ {toBn(Math.abs(net))}
-                      </td>
                     </tr>
                   );
                 })}
