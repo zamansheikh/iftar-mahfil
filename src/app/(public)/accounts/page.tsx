@@ -4,6 +4,8 @@ import { Receipt, TrendingDown, Wallet, Users, RotateCcw } from 'lucide-react';
 import SummaryCard from '@/components/SummaryCard';
 import InteractiveAccounts from './InteractiveAccounts';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'হিসাব-নিকাশ — ইফতার মাহফিল ব্যাচ ২০১৭',
   description: 'ইফতার মাহফিলের সম্পূর্ণ আয়-ব্যয়ের হিসাব।',

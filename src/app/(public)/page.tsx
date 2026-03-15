@@ -6,6 +6,8 @@ import { getEventInfo, getSummary } from '@/actions/data';
 import SummaryCard from '@/components/SummaryCard';
 import { CountdownTimer, DynamicRemainingMessage } from '@/components/HomeClientFeatures';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'হোম — কান্দানিয়া উচ্চ বিদ্যালয় ব্যাচ ২০১৭ ইফতার মাহফিল',
   description: 'কান্দানিয়া উচ্চ বিদ্যালয় ব্যাচ ২০১৭ এর ইফতার মাহফিল আয়োজনের বিস্তারিত তথ্য।',

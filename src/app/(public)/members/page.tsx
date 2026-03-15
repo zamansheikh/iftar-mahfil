@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { getMembers, getSummary } from '@/actions/data';
 import InteractiveMembersList from './InteractiveMembersList';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'সদস্যবৃন্দ — ইফতার মাহফিল ব্যাচ ২০১৭',
   description: 'ব্যাচ ২০১৭ এর সকল সদস্যদের চাঁদার তথ্য ও ফেরতের হিসাব।',

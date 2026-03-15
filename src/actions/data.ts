@@ -99,6 +99,8 @@ export async function addMember(_prev: unknown, formData: FormData) {
   await Member.create(parsed.data);
   revalidatePath('/members');
   revalidatePath('/admin/dashboard');
+  revalidatePath('/');
+  revalidatePath('/accounts');
   return { success: 'সদস্য যোগ করা হয়েছে।', timestamp: Date.now() };
 }
 
@@ -118,6 +120,8 @@ export async function updateMember(_prev: unknown, formData: FormData) {
   await Member.findByIdAndUpdate(id, parsed.data);
   revalidatePath('/members');
   revalidatePath('/admin/dashboard');
+  revalidatePath('/');
+  revalidatePath('/accounts');
   return { success: 'সদস্য তথ্য আপডেট হয়েছে।', timestamp: Date.now() };
 }
 
@@ -127,6 +131,8 @@ export async function deleteMember(id: string) {
   await Member.findByIdAndDelete(id);
   revalidatePath('/members');
   revalidatePath('/admin/dashboard');
+  revalidatePath('/');
+  revalidatePath('/accounts');
   return { success: 'সদস্য মুছে ফেলা হয়েছে।' };
 }
 
@@ -211,6 +217,9 @@ export async function rejectContribution(id: string) {
   await dbConnect();
   await PendingContribution.findByIdAndUpdate(id, { status: 'rejected' });
   revalidatePath('/admin/dashboard');
+  revalidatePath('/');
+  revalidatePath('/accounts');
+  revalidatePath('/members');
   return { success: 'চাঁদা প্রত্যাখ্যান করা হয়েছে।' };
 }
 
