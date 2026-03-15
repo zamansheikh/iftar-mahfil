@@ -37,13 +37,24 @@ export function CountdownTimer({ exactDateStr }: { exactDateStr?: string }) {
     return () => clearInterval(interval);
   }, [exactDateStr]);
 
-  if (!isClient || !exactDateStr) return null;
+  if (!isClient || !exactDateStr) {
+    return (
+      <div className="mt-8 max-w-2xl mx-auto">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-emerald-500/20 bg-black/20 p-6">
+          <div className="w-12 h-12 rounded-full border-4 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+          <p className="text-gray-400 text-sm text-center">লোড হচ্ছে...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!timeLeft) {
     return (
-      <div className="mt-8 inline-flex flex-col items-center justify-center p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-        <p className="text-emerald-400 font-bold text-lg mb-1">ইফতার মাহফিল চলমান বা সম্পন্ন হয়েছে</p>
-        <p className="text-sm text-gray-400">আপনাদের অংশগ্রহণের জন্য ধন্যবাদ!</p>
+      <div className="mt-8 max-w-2xl mx-auto">
+        <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+          <p className="text-emerald-400 font-bold text-lg mb-1">ইফতার মাহফিল চলমান বা সম্পন্ন হয়েছে</p>
+          <p className="text-sm text-gray-400">আপনাদের অংশগ্রহণের জন্য ধন্যবাদ!</p>
+        </div>
       </div>
     );
   }
