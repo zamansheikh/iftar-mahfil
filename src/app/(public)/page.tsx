@@ -90,14 +90,14 @@ export default async function HomePage() {
       </section>
 
       {/* ──── Event Details ──── */}
-      <section className="section max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="section max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <p className="text-emerald-400 text-sm uppercase tracking-widest mb-2">ইভেন্টের তথ্য</p>
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">{eventInfo.title}</h2>
           <p className="text-gray-400 max-w-xl mx-auto">{eventInfo.description}</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto px-1 sm:px-0">
           {[
             { icon: <CalendarDays className="w-6 h-6 text-yellow-400" />, label: 'তারিখ', value: eventInfo.date, bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
             { icon: <Clock className="w-6 h-6 text-emerald-400" />, label: 'সময়', value: eventInfo.time, bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
@@ -122,7 +122,7 @@ export default async function HomePage() {
       </section>
 
       {/* ──── Live Summary ──── */}
-      <section className="section max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0">
+      <section className="section max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 pt-0">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-3">
             <span className="relative w-2.5 h-2.5 pulse-dot">
@@ -133,7 +133,7 @@ export default async function HomePage() {
           <h2 className="text-3xl font-bold text-white">আর্থিক সারসংক্ষেপ</h2>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-1 sm:px-0">
           <SummaryCard
             title="মোট জমা"
             value={`৳ ${toBengaliNumber(summary.totalCollected)}`}
@@ -162,13 +162,15 @@ export default async function HomePage() {
         </div>
 
         {summary.remaining > 0 && (
-          <DynamicRemainingMessage remaining={summary.remaining} exactDateStr={eventInfo.exactDate} />
+          <div className="px-1 sm:px-0">
+            <DynamicRemainingMessage remaining={summary.remaining} exactDateStr={eventInfo.exactDate} />
+          </div>
         )}
       </section>
 
       {/* ──── Dua Section ──── */}
-      <section className="section max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-0">
-        <div className="glass-card gold-border rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden">
+      <section className="section max-w-4xl mx-auto px-5 sm:px-6 lg:px-8 pt-0">
+        <div className="glass-card gold-border rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden mx-1 sm:mx-0">
           <div className="shimmer absolute inset-0 rounded-3xl" />
           <div className="relative z-10">
             <p className="text-xs text-gray-500 uppercase tracking-widest mb-6">ইফতারের দোয়া</p>

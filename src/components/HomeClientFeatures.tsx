@@ -60,22 +60,26 @@ export function CountdownTimer({ exactDateStr }: { exactDateStr?: string }) {
   }
 
   return (
-    <div className="mt-8 max-w-2xl mx-auto">
-      <p className="text-emerald-400 text-sm uppercase tracking-widest mb-4">ইভেন্ট শুরু হতে বাকি</p>
-      <div className="flex items-center justify-center gap-3 sm:gap-6">
+    <div className="mt-8 max-w-2xl w-full mx-auto px-4 sm:px-0">
+      <p className="text-emerald-400 text-sm uppercase tracking-widest mb-4 text-center">
+        ইভেন্ট শুরু হতে বাকি
+      </p>
+      <div className="flex items-center justify-center gap-3 sm:gap-6 flex-wrap">
         {[
           { label: 'দিন', value: timeLeft.days },
           { label: 'ঘণ্টা', value: timeLeft.hours },
           { label: 'মিনিট', value: timeLeft.minutes },
           { label: 'সেকেন্ড', value: timeLeft.seconds },
-        ].map((item, i) => (
-          <div key={item.label} className="flex flex-col items-center">
+        ].map((item) => (
+          <div key={item.label} className="flex flex-col items-center min-w-[72px]">
             <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center glass-card border border-emerald-500/30 rounded-2xl shadow-[0_0_15px_rgba(16,185,129,0.15)] mb-2">
               <span className="text-2xl sm:text-3xl font-extrabold text-white">
                 {toBengaliNumber(item.value).padStart(2, '০')}
               </span>
             </div>
-            <span className="text-xs sm:text-sm text-gray-400 uppercase tracking-wider">{item.label}</span>
+            <span className="text-xs sm:text-sm text-gray-400 uppercase tracking-wider text-center">
+              {item.label}
+            </span>
           </div>
         ))}
       </div>
@@ -107,7 +111,7 @@ export function DynamicRemainingMessage({ remaining, exactDateStr }: { remaining
   // but since we want to be safe, we just handle client-only text.
   if (!isClient) {
     return (
-      <div className="mt-6 p-5 rounded-2xl border border-yellow-500/30 bg-yellow-500/5 text-center">
+      <div className="mt-6 mx-1 sm:mx-0 p-5 rounded-2xl border border-yellow-500/30 bg-yellow-500/5 text-center">
           <p className="text-yellow-400 font-semibold text-lg">
              লাইভ হিসাব ক্যালকুলেট হচ্ছে...
           </p>
@@ -116,7 +120,7 @@ export function DynamicRemainingMessage({ remaining, exactDateStr }: { remaining
   }
 
   return (
-    <div className="mt-6 p-5 rounded-2xl border border-yellow-500/30 bg-yellow-500/5 text-center transition-all duration-500">
+    <div className="mt-6 mx-1 sm:mx-0 p-5 rounded-2xl border border-yellow-500/30 bg-yellow-500/5 text-center transition-all duration-500">
       <p className="text-yellow-400 font-semibold text-[17px] sm:text-lg">
         {isExpired ? (
           <>🎉 সমস্ত খরচ বাদে অবশিষ্ট আছে ৳ {toBengaliNumber(remaining)} টাকা, যা সদস্যদের মাঝে ফেরত দেওয়া হবে।</>
