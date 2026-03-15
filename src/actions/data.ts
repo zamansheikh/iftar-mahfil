@@ -58,12 +58,13 @@ export async function getMembers() {
 
 export async function getMemberNames() {
   await dbConnect();
-  const members = await Member.find().select('name').lean();
-  return members.map((m) => m.name);
+  const members = await Member.find().select('name alternativeName').lean();
+  return members.map((m) => ({ name: m.name as string, alternativeName: (m as any).alternativeName as string | undefined }));
 }
 
 const memberSchema = z.object({
   name: z.string().min(1, 'নাম প্রয়োজন'),
+  alternativeName: z.string().optional(),
   phone: z.string().optional(),
   totalContribution: z.number().min(0).optional(),
 });
@@ -73,6 +74,7 @@ export async function addMember(_prev: unknown, formData: FormData) {
   await dbConnect();
   const data = {
     name: formData.get('name') as string,
+    alternativeName: formData.get('alternativeName') as string,
     phone: formData.get('phone') as string,
     totalContribution: Number(formData.get('totalContribution')) || 0,
   };
@@ -94,6 +96,7 @@ export async function updateMember(_prev: unknown, formData: FormData) {
   const id = formData.get('id') as string;
   const data = {
     name: formData.get('name') as string,
+    alternativeName: formData.get('alternativeName') as string,
     phone: formData.get('phone') as string,
     totalContribution: Number(formData.get('totalContribution')) || 0,
   };

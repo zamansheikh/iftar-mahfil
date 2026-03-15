@@ -15,12 +15,21 @@ const paymentMethods = [
   { value: 'অন্যান্য', label: 'অন্যান্য' },
 ];
 
-function SearchableCombobox({ items, name }: { items: string[], name: string }) {
+export interface MemberOption {
+  name: string;
+  alternativeName?: string;
+}
+
+function SearchableCombobox({ items, name }: { items: MemberOption[], name: string }) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const filteredItems = items.filter(item => item.toLowerCase().includes(query.toLowerCase()));
+  const filteredItems = items.filter(item => {
+    const term = query.toLowerCase();
+    return item.name.toLowerCase().includes(term) || 
+           (item.alternativeName && item.alternativeName.toLowerCase().includes(term));
+  });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -64,14 +73,19 @@ function SearchableCombobox({ items, name }: { items: string[], name: string }) 
           ) : (
             filteredItems.map(item => (
               <li
-                key={item}
-                className="px-4 py-2.5 text-sm text-white hover:bg-emerald-500/15 hover:text-emerald-400 cursor-pointer transition-colors border-b border-white/5 last:border-0"
+                key={item.name}
+                className="px-4 py-2.5 text-sm cursor-pointer transition-colors border-b border-white/5 last:border-0 hover:bg-emerald-500/15"
                 onClick={() => {
-                  setQuery(item);
+                  setQuery(item.name);
                   setIsOpen(false);
                 }}
               >
-                {item}
+                <div className="flex flex-col">
+                  <span className="text-white hover:text-emerald-400 font-medium">{item.name}</span>
+                  {item.alternativeName && (
+                    <span className="text-xs text-gray-500 mt-0.5">{item.alternativeName}</span>
+                  )}
+                </div>
               </li>
             ))
           )}
@@ -104,7 +118,7 @@ function SubmitButton() {
   );
 }
 
-export default function ContributeForm({ memberNames }: { memberNames: string[] }) {
+export default function ContributeForm({ memberNames }: { memberNames: MemberOption[] }) {
   const initialState: ContributeFormState = {};
   const [state, formAction] = useActionState(submitContribution, initialState);
 

@@ -28,7 +28,7 @@ import {
 interface EventInfo {
   title: string; date: string; time: string; location: string; description: string;
 }
-interface Member { _id: string; name: string; phone?: string; totalContribution: number; }
+interface Member { _id: string; name: string; alternativeName?: string; phone?: string; totalContribution: number; }
 interface PendingContribution {
   _id: string; name: string; amount: number; paymentMethod: string;
   transactionId?: string; phone: string; message?: string; submittedAt: string;
@@ -169,6 +169,12 @@ function MembersTab({ members }: { members: Member[] }) {
             className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
           />
           <input
+            type="text"
+            name="alternativeName"
+            placeholder="ইংরেজিতে নাম (ঐচ্ছিক)"
+            className="flex-1 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+          />
+          <input
             type="tel"
             name="phone"
             placeholder="ফোন নম্বর (ঐচ্ছিক)"
@@ -207,6 +213,15 @@ function MembersTab({ members }: { members: Member[] }) {
                   name="name"
                   defaultValue={editingMember.name}
                   required
+                  className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">ইংরেজিতে নাম</label>
+                <input
+                  type="text"
+                  name="alternativeName"
+                  defaultValue={editingMember.alternativeName || ''}
                   className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
                 />
               </div>
@@ -257,7 +272,10 @@ function MembersTab({ members }: { members: Member[] }) {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white">{m.name}</p>
-                    {m.phone && <p className="text-xs text-gray-500">{m.phone}</p>}
+                    <div className="flex items-center gap-2">
+                      {m.alternativeName && <p className="text-xs text-emerald-400/80">{m.alternativeName}</p>}
+                      {m.phone && <p className="text-xs text-gray-500">{m.phone}</p>}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

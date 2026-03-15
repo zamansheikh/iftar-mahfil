@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IMember extends Document {
   name: string;
+  alternativeName?: string;
   phone?: string;
   totalContribution: number;
 }
@@ -9,6 +10,7 @@ export interface IMember extends Document {
 const MemberSchema = new Schema<IMember>(
   {
     name: { type: String, required: true, unique: true, trim: true },
+    alternativeName: { type: String, trim: true },
     phone: { type: String, trim: true },
     totalContribution: { type: Number, default: 0 },
   },

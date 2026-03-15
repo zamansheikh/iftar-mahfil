@@ -265,10 +265,10 @@ export default function InteractiveAccounts({
           সদস্যদের চাঁদার তালিকা
         </h2>
 
-        {members.length === 0 ? (
+        {validMembers.length === 0 ? (
           <div className="glass-card rounded-2xl p-12 text-center border border-white/5">
             <Users className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500">এখনও কোনো সদস্য নেই।</p>
+            <p className="text-gray-500">এখনও কোনো সদস্য চাঁদা দেননি বা যোগ করা হয়নি।</p>
           </div>
         ) : (
           <div className="glass-card rounded-2xl border border-emerald-900/20 overflow-hidden">
@@ -283,16 +283,16 @@ export default function InteractiveAccounts({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {members.map((member, idx) => {
-                    const refundAmt = calculateRefund(member);
+                  {validMembers.map((m, i) => {
+                    const refundAmt = calculateRefund(m);
                     return (
-                      <tr key={member._id} className="transition-colors">
+                      <tr key={m._id} className="transition-colors">
                         <td className="px-5 py-4 text-gray-500 text-sm">
-                          {toBengaliNumber(idx + 1)}
+                          {toBengaliNumber(i + 1)}
                         </td>
-                        <td className="px-5 py-4 font-medium text-white">{member.name}</td>
+                        <td className="px-5 py-4 font-medium text-white">{m.name}</td>
                         <td className="px-5 py-4 text-right text-yellow-400 font-semibold">
-                          ৳ {toBengaliNumber(member.totalContribution)}
+                          ৳ {toBengaliNumber(m.totalContribution)}
                         </td>
                         <td className="px-5 py-4 text-right text-emerald-400 font-semibold">
                           ৳ {toBengaliNumber(refundAmt)}
