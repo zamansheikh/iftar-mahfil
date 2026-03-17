@@ -16,11 +16,13 @@ import {
   deleteExpense,
   updateExpense,
   updateMember,
+  approveModerationRequest,
+  rejectModerationRequest,
 } from '@/actions/data';
 import {
   Moon, Star, LogOut, CalendarDays, Users, HandCoins,
   Receipt, TrendingUp, Plus, Trash2, Check, X, Loader2,
- CheckCircle, Edit,
+   CheckCircle, Edit, Shield,
  Wallet, Download, Phone
 } from 'lucide-react';
 
@@ -36,6 +38,18 @@ interface PendingContribution {
   status: 'pending' | 'approved' | 'rejected';
 }
 interface Expense { _id: string; description: string; amount: number; date: string; spentBy: string; isExpended?: boolean; }
+interface ModerationRequest {
+  _id: string;
+  type: 'member_contribution_update' | 'expense_add';
+  status: 'pending' | 'approved' | 'rejected';
+  requestedBy: string;
+  requestedByRole: 'moderator' | 'admin';
+  payload: Record<string, unknown>;
+  note?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+}
 interface Summary {
   totalCollected: number; totalExpense: number; remaining: number;
   memberCount: number; perMemberRefund: number;
@@ -750,7 +764,7 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
                   <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap w-full sm:w-auto">
                     <span className="text-xs text-gray-500 truncate">{new Date(e.date).toLocaleDateString('bn-BD')}</span>
                     <span className="text-sm font-bold text-red-400 whitespace-nowrap">৳ {toBn(e.amount)}</span>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Btn onClick={() => setEditingExpenseId(e._id)} disabled={isPending} className="border border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
                         <Edit className="w-3.5 h-3.5" />
                       </Btn>
@@ -1040,6 +1054,102 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
   );
 }
 
+function ModerationTab({ requests }: { requests: ModerationRequest[] }) {
+  const [isPending, startTransition] = useTransition();
+
+  const pending = requests.filter((r) => r.status === 'pending');
+  const processed = requests.filter((r) => r.status !== 'pending');
+
+  const handleApprove = (id: string) => {
+    startTransition(async () => {
+      const res = await approveModerationRequest(id);
+      if (res.success) toast.success(res.success);
+      else if (res.error) toast.error(res.error);
+    });
+  };
+
+  const handleReject = (id: string) => {
+    startTransition(async () => {
+      const res = await rejectModerationRequest(id);
+      if (res.success) toast.success(res.success);
+      else if (res.error) toast.error(res.error);
+    });
+  };
+
+  const formatRequestTitle = (request: ModerationRequest) => {
+    if (request.type === 'member_contribution_update') {
+      const payload = request.payload as { memberName?: string; operation?: 'add' | 'set'; amount?: number };
+      const operationLabel = payload.operation === 'set' ? 'Set' : 'Add';
+      return `চাঁদা আপডেট: ${payload.memberName || 'সদস্য'} (${operationLabel} ৳ ${toBn(payload.amount || 0)})`;
+    }
+    const payload = request.payload as { description?: string; amount?: number };
+    return `খরচ যোগ: ${payload.description || 'বিবরণ'} (৳ ${toBn(payload.amount || 0)})`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <SectionCard title={`মডারেটর অনুরোধ (${toBn(pending.length)}টি অপেক্ষমাণ)`}>
+        {pending.length === 0 ? (
+          <p className="text-gray-500 text-sm text-center py-6">এই মুহূর্তে কোনো অপেক্ষমাণ অনুরোধ নেই।</p>
+        ) : (
+          <div className="space-y-3">
+            {pending.map((r) => (
+              <div key={r._id} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">{formatRequestTitle(r)}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      অনুরোধকারী: {r.requestedBy} ({r.requestedByRole})
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      সময়: {new Date(r.createdAt).toLocaleString('bn-BD')}
+                    </p>
+                    {r.note ? <p className="text-xs text-gray-400 mt-1">নোট: {r.note}</p> : null}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApprove(r._id)}
+                      disabled={isPending}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 disabled:opacity-50"
+                    >
+                      <Check className="w-3.5 h-3.5" /> অনুমোদন
+                    </button>
+                    <button
+                      onClick={() => handleReject(r._id)}
+                      disabled={isPending}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+                    >
+                      <X className="w-3.5 h-3.5" /> প্রত্যাখ্যান
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {processed.length > 0 && (
+        <SectionCard title="প্রক্রিয়াকৃত মডারেটর অনুরোধ">
+          <div className="space-y-2">
+            {processed.map((r) => (
+              <div key={r._id} className="rounded-xl border border-white/10 bg-white/5 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <p className="text-sm text-white">{formatRequestTitle(r)}</p>
+                  <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString('bn-BD')}</p>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${r.status === 'approved' ? 'badge-emerald' : 'badge-red'}`}>
+                  {r.status === 'approved' ? 'অনুমোদিত' : 'প্রত্যাখ্যাত'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 const tabs = [
@@ -1047,6 +1157,7 @@ const tabs = [
   { id: 'members', label: 'সদস্য', icon: <Users className="w-4 h-4" /> },
   { id: 'pending', label: 'চাঁদা', icon: <HandCoins className="w-4 h-4" /> },
   { id: 'expenses', label: 'খরচ', icon: <Receipt className="w-4 h-4" /> },
+  { id: 'moderation', label: 'মডারেশন', icon: <Shield className="w-4 h-4" /> },
   { id: 'summary', label: 'সারসংক্ষেপ', icon: <TrendingUp className="w-4 h-4" /> },
 ];
 
@@ -1055,12 +1166,14 @@ export default function AdminDashboardClient({
   members,
   pendingContributions,
   expenses,
+  moderationRequests,
   summary,
 }: {
   eventInfo: EventInfo;
   members: Member[];
   pendingContributions: PendingContribution[];
   expenses: Expense[];
+  moderationRequests: ModerationRequest[];
   summary: Summary;
 }) {
   const [activeTab, setActiveTab] = useState('summary');
@@ -1131,6 +1244,7 @@ export default function AdminDashboardClient({
         {activeTab === 'members' && <MembersTab members={members} />}
         {activeTab === 'pending' && <PendingTab contributions={pendingContributions} />}
         {activeTab === 'expenses' && <ExpensesTab expenses={expenses} />}
+        {activeTab === 'moderation' && <ModerationTab requests={moderationRequests} />}
         {activeTab === 'summary' && <SummaryTab summary={summary} members={members} expenses={expenses} />}
       </div>
     </div>

@@ -7,6 +7,8 @@ const JWT_SECRET = new TextEncoder().encode(
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'iftar2025';
+const MODERATOR_USERNAME = process.env.MODERATOR_USERNAME || 'moderator';
+const MODERATOR_PASSWORD = process.env.MODERATOR_PASSWORD || '2222';
 
 export async function signToken(payload: Record<string, string>) {
   return new SignJWT(payload)
@@ -29,6 +31,10 @@ export function validateAdminCredentials(username: string, password: string) {
   return username === ADMIN_USERNAME && password === ADMIN_PASSWORD;
 }
 
+export function validateModeratorCredentials(username: string, password: string) {
+  return username === MODERATOR_USERNAME && password === MODERATOR_PASSWORD;
+}
+
 export async function getAdminSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get('admin-token')?.value;
@@ -39,7 +45,15 @@ export async function getAdminSession() {
 
 export async function requireAdmin() {
   const session = await getAdminSession();
-  if (!session) {
+  if (!session || session.role !== 'admin') {
+    throw new Error('Unauthorized');
+  }
+  return session;
+}
+
+export async function requireModerator() {
+  const session = await getAdminSession();
+  if (!session || (session.role !== 'moderator' && session.role !== 'admin')) {
     throw new Error('Unauthorized');
   }
   return session;

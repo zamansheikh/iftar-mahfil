@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { getMembers, getSummary } from '@/actions/data';
-import InteractiveContactsList from './InteractiveContactsList';
+import InteractiveContactsList from './interactive-contacts-list';
 
 export const dynamic = 'force-dynamic';
 

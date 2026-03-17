@@ -5,19 +5,21 @@ import {
   getMembers,
   getPendingContributions,
   getExpenses,
+  getModerationRequests,
   getSummary,
 } from '@/actions/data';
 import AdminDashboardClient from './AdminDashboardClient';
 
 export default async function AdminDashboardPage() {
   const session = await getAdminSession();
-  if (!session) redirect('/admin');
+  if (!session || session.role !== 'admin') redirect('/admin');
 
-  const [eventInfo, members, pendingContributions, expenses, summary] = await Promise.all([
+  const [eventInfo, members, pendingContributions, expenses, moderationRequests, summary] = await Promise.all([
     getEventInfo(),
     getMembers(),
     getPendingContributions(),
     getExpenses(),
+    getModerationRequests(),
     getSummary(),
   ]);
 
@@ -27,6 +29,7 @@ export default async function AdminDashboardPage() {
       members={members}
       pendingContributions={pendingContributions}
       expenses={expenses}
+      moderationRequests={moderationRequests}
       summary={summary}
     />
   );

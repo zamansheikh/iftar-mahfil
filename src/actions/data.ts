@@ -6,7 +6,8 @@ import EventInfo from '@/models/EventInfo';
 import Member from '@/models/Member';
 import PendingContribution from '@/models/PendingContribution';
 import Expense from '@/models/Expense';
-import { requireAdmin } from '@/lib/auth';
+import ModerationRequest from '@/models/ModerationRequest';
+import { requireAdmin, requireModerator } from '@/lib/auth';
 import { z } from 'zod';
 
 // ─── Event Info ────────────────────────────────────────────────────────────────
@@ -136,6 +137,147 @@ export async function deleteMember(id: string) {
   return { success: 'সদস্য মুছে ফেলা হয়েছে।' };
 }
 
+const moderatorAddMemberSchema = z.object({
+  name: z.string().min(1, 'নাম প্রয়োজন'),
+  alternativeName: z.string().optional(),
+  phone: z.string().optional(),
+});
+
+export async function moderatorAddMember(_prev: unknown, formData: FormData) {
+  await requireModerator();
+  await dbConnect();
+
+  const data = {
+    name: formData.get('name')?.toString().trim(),
+    alternativeName: formData.get('alternativeName')?.toString().trim() || '',
+    phone: formData.get('phone')?.toString().trim() || '',
+  };
+
+  const parsed = moderatorAddMemberSchema.safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const existing = await Member.findOne({ name: parsed.data.name });
+  if (existing) return { error: 'এই নামে ইতিমধ্যে সদস্য আছেন।' };
+
+  await Member.create({ ...parsed.data, totalContribution: 0 });
+  revalidatePath('/members');
+  revalidatePath('/contacts');
+  revalidatePath('/accounts');
+  revalidatePath('/moderator/dashboard');
+  revalidatePath('/admin/dashboard');
+  return { success: 'সদস্য যোগ করা হয়েছে।', timestamp: Date.now() };
+}
+
+const moderatorUpdatePhoneSchema = z.object({
+  id: z.string().min(1, 'সদস্য নির্বাচন করুন'),
+  phone: z.string().min(1, 'ফোন নম্বর প্রয়োজন'),
+});
+
+export async function moderatorUpdateMemberPhone(_prev: unknown, formData: FormData) {
+  await requireModerator();
+  await dbConnect();
+
+  const data = {
+    id: formData.get('id')?.toString() || '',
+    phone: formData.get('phone')?.toString().trim() || '',
+  };
+
+  const parsed = moderatorUpdatePhoneSchema.safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await Member.findByIdAndUpdate(parsed.data.id, { phone: parsed.data.phone });
+  revalidatePath('/members');
+  revalidatePath('/contacts');
+  revalidatePath('/moderator/dashboard');
+  revalidatePath('/admin/dashboard');
+  return { success: 'ফোন নম্বর আপডেট হয়েছে।', timestamp: Date.now() };
+}
+
+const contributionAdjustmentSchema = z.object({
+  memberId: z.string().min(1, 'সদস্য নির্বাচন করুন'),
+  operation: z.enum(['add', 'set']),
+  amount: z.number().min(0, 'টাকার পরিমাণ সঠিক হতে হবে'),
+  note: z.string().optional(),
+});
+
+export async function createContributionAdjustmentRequest(_prev: unknown, formData: FormData) {
+  const session = await requireModerator();
+  await dbConnect();
+
+  const data = {
+    memberId: formData.get('memberId')?.toString() || '',
+    operation: (formData.get('operation')?.toString() || 'add') as 'add' | 'set',
+    amount: Number(formData.get('amount')),
+    note: formData.get('note')?.toString().trim() || '',
+  };
+
+  const parsed = contributionAdjustmentSchema.safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const member = await Member.findById(parsed.data.memberId).lean();
+  if (!member) return { error: 'সদস্য পাওয়া যায়নি।' };
+
+  await ModerationRequest.create({
+    type: 'member_contribution_update',
+    status: 'pending',
+    requestedBy: String(session.username || 'moderator'),
+    requestedByRole: session.role === 'admin' ? 'admin' : 'moderator',
+    note: parsed.data.note,
+    payload: {
+      memberId: parsed.data.memberId,
+      memberName: member.name,
+      operation: parsed.data.operation,
+      amount: parsed.data.amount,
+    },
+  });
+
+  revalidatePath('/moderator/dashboard');
+  revalidatePath('/admin/dashboard');
+  return { success: 'চাঁদা পরিবর্তনের অনুরোধ পাঠানো হয়েছে।' };
+}
+
+const expenseRequestSchema = z.object({
+  description: z.string().min(1, 'বিবরণ প্রয়োজন'),
+  amount: z.number().min(0, 'পরিমাণ সঠিক হতে হবে'),
+  date: z.string().min(1, 'তারিখ প্রয়োজন'),
+  spentBy: z.string().min(1, 'কে খরচ করেছে তা উল্লেখ করুন'),
+  note: z.string().optional(),
+});
+
+export async function createExpenseRequest(_prev: unknown, formData: FormData) {
+  const session = await requireModerator();
+  await dbConnect();
+
+  const data = {
+    description: formData.get('description')?.toString().trim() || '',
+    amount: Number(formData.get('amount')),
+    date: formData.get('date')?.toString() || '',
+    spentBy: formData.get('spentBy')?.toString().trim() || '',
+    note: formData.get('note')?.toString().trim() || '',
+  };
+
+  const parsed = expenseRequestSchema.safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await ModerationRequest.create({
+    type: 'expense_add',
+    status: 'pending',
+    requestedBy: String(session.username || 'moderator'),
+    requestedByRole: session.role === 'admin' ? 'admin' : 'moderator',
+    note: parsed.data.note,
+    payload: {
+      description: parsed.data.description,
+      amount: parsed.data.amount,
+      date: parsed.data.date,
+      spentBy: parsed.data.spentBy,
+    },
+  });
+
+  revalidatePath('/moderator/dashboard');
+  revalidatePath('/admin/dashboard');
+  return { success: 'খরচ যোগের অনুরোধ পাঠানো হয়েছে।' };
+}
+
 // ─── Contributions ─────────────────────────────────────────────────────────────
 
 const contributionSchema = z.object({
@@ -221,6 +363,93 @@ export async function rejectContribution(id: string) {
   revalidatePath('/accounts');
   revalidatePath('/members');
   return { success: 'চাঁদা প্রত্যাখ্যান করা হয়েছে।' };
+}
+
+export async function getModerationRequests() {
+  await requireAdmin();
+  await dbConnect();
+  const requests = await ModerationRequest.find().sort({ createdAt: -1 }).lean();
+  return JSON.parse(JSON.stringify(requests));
+}
+
+export async function getMyModerationRequests() {
+  const session = await requireModerator();
+  await dbConnect();
+  const username = String(session.username || 'moderator');
+  const requests = await ModerationRequest.find({ requestedBy: username })
+    .sort({ createdAt: -1 })
+    .lean();
+  return JSON.parse(JSON.stringify(requests));
+}
+
+export async function approveModerationRequest(id: string) {
+  const session = await requireAdmin();
+  await dbConnect();
+
+  const request = await ModerationRequest.findById(id);
+  if (!request) return { error: 'অনুরোধ পাওয়া যায়নি।' };
+  if (request.status !== 'pending') return { error: 'এই অনুরোধ ইতিমধ্যে প্রক্রিয়া করা হয়েছে।' };
+
+  if (request.type === 'member_contribution_update') {
+    const payload = request.payload as {
+      memberId: string;
+      operation: 'add' | 'set';
+      amount: number;
+    };
+    if (payload.operation === 'add') {
+      await Member.findByIdAndUpdate(payload.memberId, { $inc: { totalContribution: payload.amount } });
+    } else {
+      await Member.findByIdAndUpdate(payload.memberId, { totalContribution: payload.amount });
+    }
+    revalidatePath('/members');
+    revalidatePath('/accounts');
+    revalidatePath('/contacts');
+  }
+
+  if (request.type === 'expense_add') {
+    const payload = request.payload as {
+      description: string;
+      amount: number;
+      date: string;
+      spentBy: string;
+    };
+    await Expense.create({
+      description: payload.description,
+      amount: payload.amount,
+      date: new Date(payload.date),
+      spentBy: payload.spentBy,
+      isExpended: true,
+    });
+    revalidatePath('/accounts');
+  }
+
+  request.status = 'approved';
+  request.reviewedBy = String(session.username || 'admin');
+  request.reviewedAt = new Date();
+  await request.save();
+
+  revalidatePath('/admin/dashboard');
+  revalidatePath('/moderator/dashboard');
+  revalidatePath('/');
+  return { success: 'মডারেটর অনুরোধ অনুমোদন হয়েছে।' };
+}
+
+export async function rejectModerationRequest(id: string) {
+  const session = await requireAdmin();
+  await dbConnect();
+
+  const request = await ModerationRequest.findById(id);
+  if (!request) return { error: 'অনুরোধ পাওয়া যায়নি।' };
+  if (request.status !== 'pending') return { error: 'এই অনুরোধ ইতিমধ্যে প্রক্রিয়া করা হয়েছে।' };
+
+  request.status = 'rejected';
+  request.reviewedBy = String(session.username || 'admin');
+  request.reviewedAt = new Date();
+  await request.save();
+
+  revalidatePath('/admin/dashboard');
+  revalidatePath('/moderator/dashboard');
+  return { success: 'মডারেটর অনুরোধ প্রত্যাখ্যান হয়েছে।' };
 }
 
 // ─── Expenses ──────────────────────────────────────────────────────────────────

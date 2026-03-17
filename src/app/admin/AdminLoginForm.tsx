@@ -47,7 +47,7 @@ export default function AdminLoginForm() {
       >
         {state.error && (
           <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0" />
             {state.error}
           </div>
         )}

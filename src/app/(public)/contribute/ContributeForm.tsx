@@ -127,7 +127,7 @@ export default function ContributeForm({ memberNames }: { memberNames: MemberOpt
     try {
       await navigator.clipboard.writeText(value);
       toast.success('নম্বর কপি হয়েছে');
-    } catch (error) {
+    } catch {
       toast.error('কপি করতে ব্যর্থ হয়েছে');
     }
   }
@@ -234,7 +234,7 @@ export default function ContributeForm({ memberNames }: { memberNames: MemberOpt
           <form action={formAction} className="glass-card rounded-2xl border border-emerald-900/30 p-6 sm:p-8 space-y-5">
           {state.error && (
             <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm mb-5">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 shrink-0" />
               {state.error}
             </div>
           )}
