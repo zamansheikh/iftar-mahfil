@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getAdminSession } from '@/lib/auth';
-import { getMembers, getMyModerationRequests } from '@/actions/data';
+import { getMembers, getMyModerationRequests, getSummary, getExpenses } from '@/actions/data';
 import ModeratorDashboardClient from './moderator-dashboard-client';
 
 export default async function ModeratorDashboardPage() {
@@ -9,10 +9,12 @@ export default async function ModeratorDashboardPage() {
     redirect('/moderator');
   }
 
-  const [members, requests] = await Promise.all([
+  const [members, requests, summary, expenses] = await Promise.all([
     getMembers(),
     getMyModerationRequests(),
+    getSummary(),
+    getExpenses(),
   ]);
 
-  return <ModeratorDashboardClient members={members} requests={requests} />;
+  return <ModeratorDashboardClient members={members} requests={requests} summary={summary} expenses={expenses} />;
 }
