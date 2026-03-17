@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { submitContribution, ContributeFormState } from '@/actions/data';
-import { HandCoins, CheckCircle, AlertCircle, Loader2, ChevronDown } from 'lucide-react';
+import { HandCoins, CheckCircle, AlertCircle, Loader2, ChevronDown, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 const paymentMethods = [
@@ -12,6 +12,7 @@ const paymentMethods = [
   { value: 'বিকাশ', label: 'বিকাশ' },
   { value: 'নগদ_মোবাইল', label: 'নগদ (মোবাইল ব্যাংকিং)' },
   { value: 'রকেট', label: 'রকেট' },
+  { value: 'হাতে_হাতে', label: 'হাতে হাতে (অর্থ সংগ্রহকারী: আরিফুল)' },
   { value: 'অন্যান্য', label: 'অন্যান্য' },
 ];
 
@@ -122,6 +123,15 @@ export default function ContributeForm({ memberNames }: { memberNames: MemberOpt
   const initialState: ContributeFormState = {};
   const [state, formAction] = useActionState(submitContribution, initialState);
 
+  async function copyToClipboard(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success('নম্বর কপি হয়েছে');
+    } catch (error) {
+      toast.error('কপি করতে ব্যর্থ হয়েছে');
+    }
+  }
+
   useEffect(() => {
     if (state.success) toast.success(state.success);
     if (state.error) toast.error(state.error);
@@ -164,16 +174,55 @@ export default function ContributeForm({ memberNames }: { memberNames: MemberOpt
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row justify-between p-4 rounded-xl bg-white/5 border border-white/10">
                 <span className="text-sm font-medium text-white">Zaman</span>
-                <div className="sm:text-right mt-1 sm:mt-0">
-                  <p className="text-emerald-400 font-bold font-mono text-lg">01735069723</p>
+                <div className="sm:text-right mt-1 sm:mt-0 flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-emerald-400 font-bold font-mono text-lg">01735069723</p>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard('01735069723')}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/15 text-gray-200 transition"
+                      aria-label="নম্বর কপি করুন"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
                   <p className="text-xs text-gray-500">বিকাশ, নগদ, রকেট (Personal)</p>
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row justify-between p-4 rounded-xl bg-white/5 border border-white/10">
                 <span className="text-sm font-medium text-white">Mehedi</span>
-                <div className="sm:text-right mt-1 sm:mt-0">
-                  <p className="text-emerald-400 font-bold font-mono text-lg">01701509966</p>
+                <div className="sm:text-right mt-1 sm:mt-0 flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-emerald-400 font-bold font-mono text-lg">01701509966</p>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard('01701509966')}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/15 text-gray-200 transition"
+                      aria-label="নম্বর কপি করুন"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
                   <p className="text-xs text-gray-500">বিকাশ (Personal)</p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+                <span className="text-sm font-medium text-white">আরিফুল ইসলাম</span>
+                <div className="sm:text-right mt-1 sm:mt-0 flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-emerald-400 font-bold font-mono text-lg">01631-140820</p>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard('01631-140820')}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/15 text-gray-200 transition"
+                      aria-label="নম্বর কপি করুন"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    হাতে হাতে টাকা দিতে আরিফুল এর সাথে যোগাযোগ করুন (কান্দানিয়া বাজারে থাকবে)
+                  </p>
                 </div>
               </div>
             </div>
