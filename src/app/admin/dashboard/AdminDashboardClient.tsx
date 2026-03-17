@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useActionState, useEffect, useTransition } from 'react';
+import { useMemo, useState, useActionState, useEffect, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { toast } from 'sonner';
 import {
@@ -149,6 +149,18 @@ function EventTab({ eventInfo }: { eventInfo: EventInfo }) {
 // ─── Tab: Members ─────────────────────────────────────────────────────────────
 
 function MembersTab({ members }: { members: Member[] }) {
+  const [query, setQuery] = useState('');
+  const filteredMembers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return members;
+    return members.filter((m) => {
+      const name = m.name.toLowerCase();
+      const alt = m.alternativeName?.toLowerCase() ?? '';
+      const phone = m.phone?.toLowerCase() ?? '';
+      return name.includes(q) || alt.includes(q) || phone.includes(q);
+    });
+  }, [members, query]);
+
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [addState, addFormAction] = useActionState(addMember, null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -185,11 +197,31 @@ function MembersTab({ members }: { members: Member[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center bg-[#070d1a] border border-white/5 rounded-2xl p-5 mb-4 shadow-sm">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Users className="w-5 h-5 text-emerald-400" />
-          সদস্য ব্যবস্থাপনা
-        </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-[#070d1a] border border-white/5 rounded-2xl p-5 mb-4 shadow-sm gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Users className="w-5 h-5 text-emerald-400" />
+            সদস্য ব্যবস্থাপনা
+          </h2>
+          <div className="relative">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="সদস্য খুঁজুন..."
+              className="w-52 bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-emerald-500/50 transition-colors"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute inset-y-0 right-2 flex items-center justify-center text-gray-400 hover:text-emerald-400"
+                aria-label="খুঁজুন রিসেট"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
         <button
           onClick={() => setIsAddingMember(!isAddingMember)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold rounded-xl transition-all"
@@ -330,12 +362,12 @@ function MembersTab({ members }: { members: Member[] }) {
         </div>
       )}
 
-      <SectionCard title={`সদস্য তালিকা (${toBn(members.length)} জন)`}>
-        {members.length === 0 ? (
+      <SectionCard title={`সদস্য তালিকা (${toBn(filteredMembers.length)} জন)`}>
+        {filteredMembers.length === 0 ? (
           <p className="text-gray-500 text-sm text-center py-6">কোনো সদস্য নেই।</p>
         ) : (
           <div className="space-y-2">
-            {members.map((m) => (
+            {filteredMembers.map((m) => (
               <div
                 key={m._id}
                 className="flex flex-col gap-2 p-3 rounded-xl bg-white/3 border border-white/5 hover:border-emerald-500/20 transition-colors"
