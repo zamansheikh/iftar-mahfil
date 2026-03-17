@@ -787,8 +787,12 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
   const totalExpenseWithDrafts = summary.totalExpense + draftTotal;
   const remainingWithDrafts = summary.totalCollected - totalExpenseWithDrafts;
 
+  const [showAllMembers, setShowAllMembers] = useState(false);
+
   const validMembers = members.filter((m) => m.totalContribution >= 1);
   const totalValidContribution = validMembers.reduce((sum, m) => sum + m.totalContribution, 0);
+
+  const displayMembers = showAllMembers ? members : validMembers;
 
   const calculateRefund = (member: Member) => {
     if (member.totalContribution < 1) return 0;
@@ -983,8 +987,25 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
         )}
       </SectionCard>
 
-      <SectionCard title="সদস্যদের বিস্তারিত">
-        {members.length === 0 ? (
+      <SectionCard title={`সদস্যদের বিস্তারিত (${toBn(displayMembers.length)} জন)`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <p className="text-sm text-gray-400">
+            {showAllMembers
+              ? 'সকল সদস্য দেখানো হচ্ছে (জমা ০ সহ)'
+              : 'শুরুতে শুধুমাত্র যারা ১ টাকা বা তার বেশি দান করেছেন দেখানো হচ্ছে'}
+          </p>
+          <label className="inline-flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showAllMembers}
+              onChange={(e) => setShowAllMembers(e.target.checked)}
+              className="w-4 h-4 rounded border-white/20 text-emerald-500 bg-[#0d1826] cursor-pointer"
+            />
+            সব সদস্য দেখান
+          </label>
+        </div>
+
+        {displayMembers.length === 0 ? (
           <p className="text-gray-500 text-sm text-center py-4">কোনো সদস্য নেই।</p>
         ) : (
           <div className="overflow-x-auto print-overflow-visible">
@@ -998,7 +1019,7 @@ function SummaryTab({ summary, members, expenses }: { summary: Summary; members:
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {members.map((m, i) => {
+                {displayMembers.map((m, i) => {
                   const refundAmt = calculateRefund(m);
                   return (
                     <tr key={m._id}>
