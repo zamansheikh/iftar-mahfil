@@ -7,6 +7,7 @@ import Member from '@/models/Member';
 import PendingContribution from '@/models/PendingContribution';
 import Expense from '@/models/Expense';
 import ModerationRequest from '@/models/ModerationRequest';
+import Note from '@/models/Note';
 import { requireAdmin, requireModerator } from '@/lib/auth';
 import { z } from 'zod';
 
@@ -90,6 +91,13 @@ export async function getCollectorsForForms() {
   return JSON.parse(JSON.stringify(collectors));
 }
 
+export async function getSharedNotes() {
+  await requireModerator();
+  await dbConnect();
+  const notes = await Note.find().sort({ createdAt: -1 }).lean();
+  return JSON.parse(JSON.stringify(notes));
+}
+
 const memberSchema = z.object({
   name: z.string().min(1, 'নাম প্রয়োজন'),
   alternativeName: z.string().optional(),
@@ -102,6 +110,48 @@ const collectorAssignmentSchema = z.object({
   memberId: z.string().min(1, 'সদস্য নির্বাচন করুন'),
   isCollector: z.boolean(),
 });
+
+const sharedNoteSchema = z.object({
+  content: z.string().trim().min(1, 'নোট লিখুন').max(1000, 'নোট ১০০০ অক্ষরের বেশি হতে পারবে না'),
+  memberId: z.string().optional(),
+});
+
+export async function addSharedNote(_prev: unknown, formData: FormData) {
+  const session = await requireModerator();
+  await dbConnect();
+
+  const memberIdRaw = formData.get('memberId')?.toString().trim() || '';
+  const data = {
+    content: formData.get('content')?.toString() || '',
+    memberId: memberIdRaw || undefined,
+  };
+
+  const parsed = sharedNoteSchema.safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  let memberName: string | undefined;
+  if (parsed.data.memberId) {
+    const member = await Member.findById(parsed.data.memberId).lean();
+    if (!member) return { error: 'সদস্য পাওয়া যায়নি।' };
+    memberName = member.name as string;
+  }
+
+  await Note.create({
+    content: parsed.data.content,
+    memberId: parsed.data.memberId || undefined,
+    memberName,
+    createdBy: String(session.username || session.role),
+    createdByRole: session.role === 'admin' ? 'admin' : 'moderator',
+  });
+
+  revalidatePath('/admin/dashboard');
+  revalidatePath('/moderator/dashboard');
+
+  return {
+    success: 'নোট সংরক্ষণ হয়েছে।',
+    timestamp: Date.now(),
+  };
+}
 
 export async function toggleMemberCollector(_prev: unknown, formData: FormData) {
   await requireAdmin();

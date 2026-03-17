@@ -9,6 +9,17 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'হিসাব-নিকাশ — ইফতার মাহফিল ব্যাচ ২০১৭',
   description: 'ইফতার মাহফিলের সম্পূর্ণ আয়-ব্যয়ের হিসাব।',
+  openGraph: {
+    title: 'হিসাব-নিকাশ — ইফতার মাহফিল ব্যাচ ২০১৭',
+    description: 'ইফতার মাহফিলের সম্পূর্ণ আয়-ব্যয়ের হিসাব।',
+    url: 'https://iftar-mahfil.vercel.app/accounts',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'হিসাব-নিকাশ — ইফতার মাহফিল',
+    description: 'স্বচ্ছ আয়-ব্যয়ের পূর্ণ হিসাব এক নজরে।',
+  },
 };
 
 function toBengaliNumber(n: number): string {

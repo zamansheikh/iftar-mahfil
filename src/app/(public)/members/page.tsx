@@ -7,6 +7,17 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'সদস্যবৃন্দ — ইফতার মাহফিল ব্যাচ ২০১৭',
   description: 'ব্যাচ ২০১৭ এর সকল সদস্যদের চাঁদার তথ্য ও ফেরতের হিসাব।',
+  openGraph: {
+    title: 'সদস্যবৃন্দ — ইফতার মাহফিল ব্যাচ ২০১৭',
+    description: 'ব্যাচ ২০১৭ এর সকল সদস্যদের চাঁদার তথ্য ও ফেরতের হিসাব।',
+    url: 'https://iftar-mahfil.vercel.app/members',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'সদস্যবৃন্দ — ইফতার মাহফিল',
+    description: 'সদস্য তালিকা, চাঁদা ও ফেরতের হিসাব দেখুন।',
+  },
 };
 
 export default async function MembersPage() {

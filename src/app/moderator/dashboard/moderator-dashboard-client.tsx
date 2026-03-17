@@ -1,8 +1,10 @@
 'use client';
 
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { logoutAction } from '@/actions/auth';
+import SharedNotesTab from '@/components/SharedNotesTab';
 import {
   moderatorAddMember,
   moderatorUpdateMemberPhone,
@@ -21,6 +23,7 @@ import {
   BadgePlus,
   ClipboardList,
   Download,
+  FileText,
 } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
 
@@ -59,6 +62,15 @@ interface Summary {
   perMemberRefund: number;
 }
 
+interface SharedNote {
+  _id: string;
+  content: string;
+  memberName?: string;
+  createdBy: string;
+  createdByRole: 'admin' | 'moderator';
+  createdAt: string;
+}
+
 function toBn(n: number) {
   return n.toString().replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[parseInt(d)]);
 }
@@ -81,6 +93,7 @@ const tabs = [
   { id: 'members', label: 'সদস্য এডিট/যোগ', icon: <Users className="w-4 h-4" /> },
   { id: 'money', label: 'চাঁদা অনুরোধ', icon: <Wallet className="w-4 h-4" /> },
   { id: 'expense', label: 'খরচ অনুরোধ', icon: <Receipt className="w-4 h-4" /> },
+  { id: 'notes', label: 'নোটস', icon: <FileText className="w-4 h-4" /> },
   { id: 'requests', label: 'আমার অনুরোধ', icon: <ClipboardList className="w-4 h-4" /> },
 ] as const;
 
@@ -485,12 +498,15 @@ export default function ModeratorDashboardClient({
   requests,
   summary,
   expenses,
+  notes,
 }: {
   members: Member[];
   requests: ModerationRequestItem[];
   summary: Summary;
   expenses: Expense[];
+  notes: SharedNote[];
 }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('memberList');
   const [selectedMemberIdForPhone, setSelectedMemberIdForPhone] = useState('');
   const [selectedMemberIdForMoney, setSelectedMemberIdForMoney] = useState('');
@@ -505,14 +521,20 @@ export default function ModeratorDashboardClient({
   const [expenseReqState, expenseReqAction] = useActionState(createExpenseRequest, null);
 
   useEffect(() => {
-    if ((addMemberState as { success?: string })?.success) toast.success((addMemberState as { success?: string }).success);
+    if ((addMemberState as { success?: string })?.success) {
+      toast.success((addMemberState as { success?: string }).success);
+      router.refresh();
+    }
     if ((addMemberState as { error?: string })?.error) toast.error((addMemberState as { error?: string }).error);
-  }, [addMemberState]);
+  }, [addMemberState, router]);
 
   useEffect(() => {
-    if ((phoneState as { success?: string })?.success) toast.success((phoneState as { success?: string }).success);
+    if ((phoneState as { success?: string })?.success) {
+      toast.success((phoneState as { success?: string }).success);
+      router.refresh();
+    }
     if ((phoneState as { error?: string })?.error) toast.error((phoneState as { error?: string }).error);
-  }, [phoneState]);
+  }, [phoneState, router]);
 
   useEffect(() => {
     if ((moneyReqState as { success?: string })?.success) toast.success((moneyReqState as { success?: string }).success);
@@ -692,6 +714,10 @@ export default function ModeratorDashboardClient({
               <SaveButton label="খরচ অনুরোধ পাঠান" />
             </form>
           </Section>
+        )}
+
+        {activeTab === 'notes' && (
+          <SharedNotesTab members={members} notes={notes} title="অ্যাডমিন ও মডারেটরের শেয়ারড নোটস" />
         )}
 
         {activeTab === 'requests' && (

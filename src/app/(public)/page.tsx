@@ -11,6 +11,17 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'হোম — কান্দানিয়া উচ্চ বিদ্যালয় ব্যাচ ২০১৭ ইফতার মাহফিল',
   description: 'কান্দানিয়া উচ্চ বিদ্যালয় ব্যাচ ২০১৭ এর ইফতার মাহফিল আয়োজনের বিস্তারিত তথ্য।',
+  openGraph: {
+    title: 'হোম — কান্দানিয়া উচ্চ বিদ্যালয় ব্যাচ ২০১৭ ইফতার মাহফিল',
+    description: 'কান্দানিয়া উচ্চ বিদ্যালয় ব্যাচ ২০১৭ এর ইফতার মাহফিল আয়োজনের বিস্তারিত তথ্য।',
+    url: 'https://iftar-mahfil.vercel.app/',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'হোম — কান্দানিয়া ব্যাচ ২০১৭ ইফতার মাহফিল',
+    description: 'ইভেন্টের তথ্য, লাইভ হিসাব ও অংশগ্রহণের সবকিছু একসাথে।',
+  },
 };
 
 function toBengaliNumber(n: number): string {

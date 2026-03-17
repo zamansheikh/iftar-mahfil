@@ -7,6 +7,17 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'যোগাযোগ তালিকা — ইফতার মাহফিল ব্যাচ ২০১৭',
   description: 'সদস্যদের ফোন নম্বর সহ তালিকা।',
+  openGraph: {
+    title: 'যোগাযোগ তালিকা — ইফতার মাহফিল ব্যাচ ২০১৭',
+    description: 'সদস্যদের ফোন নম্বর সহ তালিকা।',
+    url: 'https://iftar-mahfil.vercel.app/contacts',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'যোগাযোগ তালিকা — ইফতার মাহফিল',
+    description: 'সদস্যদের ফোন নম্বর সহ দ্রুত যোগাযোগ তালিকা।',
+  },
 };
 
 export default async function ContactsPage() {

@@ -4,6 +4,7 @@ import { useMemo, useState, useActionState, useEffect, useTransition } from 'rea
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import SharedNotesTab from '@/components/SharedNotesTab';
 import {
   logoutAction,
 } from '@/actions/auth';
@@ -24,7 +25,7 @@ import {
 import {
   Moon, Star, LogOut, CalendarDays, Users, HandCoins,
   Receipt, TrendingUp, Plus, Trash2, Check, X, Loader2,
-   CheckCircle, Edit, Shield,
+     CheckCircle, Edit, Shield, FileText,
  Wallet, Download, Phone
 } from 'lucide-react';
 
@@ -56,6 +57,15 @@ interface ModerationRequest {
 interface Summary {
   totalCollected: number; totalExpense: number; remaining: number;
   memberCount: number; perMemberRefund: number;
+}
+
+interface SharedNote {
+  _id: string;
+  content: string;
+  memberName?: string;
+  createdBy: string;
+  createdByRole: 'admin' | 'moderator';
+  createdAt: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1258,6 +1268,7 @@ const tabs = [
   { id: 'members', label: 'সদস্য', icon: <Users className="w-4 h-4" /> },
   { id: 'pending', label: 'চাঁদা', icon: <HandCoins className="w-4 h-4" /> },
   { id: 'expenses', label: 'খরচ', icon: <Receipt className="w-4 h-4" /> },
+  { id: 'notes', label: 'নোটস', icon: <FileText className="w-4 h-4" /> },
   { id: 'moderation', label: 'মডারেশন', icon: <Shield className="w-4 h-4" /> },
   { id: 'summary', label: 'সারসংক্ষেপ', icon: <TrendingUp className="w-4 h-4" /> },
 ];
@@ -1268,6 +1279,7 @@ export default function AdminDashboardClient({
   pendingContributions,
   expenses,
   moderationRequests,
+  notes,
   summary,
 }: {
   eventInfo: EventInfo;
@@ -1275,6 +1287,7 @@ export default function AdminDashboardClient({
   pendingContributions: PendingContribution[];
   expenses: Expense[];
   moderationRequests: ModerationRequest[];
+  notes: SharedNote[];
   summary: Summary;
 }) {
   const [activeTab, setActiveTab] = useState('summary');
@@ -1345,6 +1358,7 @@ export default function AdminDashboardClient({
         {activeTab === 'members' && <MembersTab members={members} />}
         {activeTab === 'pending' && <PendingTab contributions={pendingContributions} />}
         {activeTab === 'expenses' && <ExpensesTab expenses={expenses} collectors={members.filter((m) => m.isCollector)} />}
+        {activeTab === 'notes' && <SharedNotesTab members={members} notes={notes} title="অ্যাডমিন ও মডারেটরের শেয়ারড নোটস" />}
         {activeTab === 'moderation' && <ModerationTab requests={moderationRequests} />}
         {activeTab === 'summary' && <SummaryTab summary={summary} members={members} expenses={expenses} />}
       </div>
