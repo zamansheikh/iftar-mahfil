@@ -40,11 +40,11 @@ interface ModerationRequestItem {
 }
 
 const tabs = [
-  { id: 'members', label: 'সদস্য', icon: <Users className="w-4 h-4" /> },
+  { id: 'memberList', label: 'সদস্য তালিকা', icon: <BadgePlus className="w-4 h-4" /> },
+  { id: 'members', label: 'সদস্য এডিট/যোগ', icon: <Users className="w-4 h-4" /> },
   { id: 'money', label: 'চাঁদা অনুরোধ', icon: <Wallet className="w-4 h-4" /> },
   { id: 'expense', label: 'খরচ অনুরোধ', icon: <Receipt className="w-4 h-4" /> },
   { id: 'requests', label: 'আমার অনুরোধ', icon: <ClipboardList className="w-4 h-4" /> },
-  { id: 'memberList', label: 'সদস্য তালিকা', icon: <BadgePlus className="w-4 h-4" /> },
 ] as const;
 
 function requestStatusLabel(status: ModerationRequestItem['status']) {
@@ -188,9 +188,10 @@ export default function ModeratorDashboardClient({
   members: Member[];
   requests: ModerationRequestItem[];
 }) {
-  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('members');
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('memberList');
   const [selectedMemberIdForPhone, setSelectedMemberIdForPhone] = useState('');
   const [selectedMemberIdForMoney, setSelectedMemberIdForMoney] = useState('');
+  const [memberListQuery, setMemberListQuery] = useState('');
 
   const [addMemberState, addMemberAction] = useActionState(moderatorAddMember, null);
   const [phoneState, phoneAction] = useActionState(moderatorUpdateMemberPhone, null);
@@ -318,14 +319,7 @@ export default function ModeratorDashboardClient({
                 onSelect={setSelectedMemberIdForMoney}
                 placeholder="সদস্য খুঁজে বেছে নিন"
               />
-              <select
-                name="operation"
-                defaultValue="add"
-                className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
-              >
-                <option value="add">যোগ করুন (Add)</option>
-                <option value="set">সেট করুন (Set)</option>
-              </select>
+              <input type="hidden" name="operation" value="add" />
               <input
                 type="number"
                 min="0"
@@ -431,32 +425,59 @@ export default function ModeratorDashboardClient({
 
         {activeTab === 'memberList' && (
           <Section title="বর্তমান সদস্য তালিকা (কল বাটনসহ)">
-            <div className="space-y-2">
-              {members.map((m) => (
-                <div key={m._id} className="rounded-xl border border-white/10 p-3 bg-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm text-white truncate">{m.name}</p>
-                    {m.alternativeName ? <p className="text-xs text-gray-400 truncate">{m.alternativeName}</p> : null}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-xs text-gray-300 flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                      {m.phone || 'নাই'}
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={memberListQuery}
+                onChange={(e) => setMemberListQuery(e.target.value)}
+                placeholder="সদস্য খুঁজুন..."
+                className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
+              />
+
+              <div className="space-y-2">
+                {members
+                  .filter((m) => {
+                    const q = memberListQuery.trim().toLowerCase();
+                    if (!q) return true;
+                    const name = m.name.toLowerCase();
+                    const alt = (m.alternativeName || '').toLowerCase();
+                    const phone = (m.phone || '').toLowerCase();
+                    return name.includes(q) || alt.includes(q) || phone.includes(q);
+                  })
+                  .map((m) => (
+                    <div
+                      key={m._id}
+                      className="rounded-xl border border-white/10 p-3 bg-white/5 flex flex-col gap-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm text-white truncate">{m.name}</p>
+                          {m.alternativeName ? (
+                            <p className="text-xs text-gray-400 truncate">{m.alternativeName}</p>
+                          ) : null}
+                        </div>
+                        <div className="text-xs text-yellow-400 flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" /> ৳ {m.totalContribution}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-xs text-gray-300 flex items-center gap-1">
+                          <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                          {m.phone || 'নাই'}
+                        </div>
+                        {m.phone ? (
+                          <a
+                            href={`tel:${m.phone}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 text-xs"
+                          >
+                            <Phone className="w-3.5 h-3.5" /> কল করুন
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
-                    {m.phone ? (
-                      <a
-                        href={`tel:${m.phone}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 text-xs"
-                      >
-                        <Phone className="w-3.5 h-3.5" /> কল করুন
-                      </a>
-                    ) : null}
-                    <div className="text-xs text-yellow-400 flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5" />৳ {m.totalContribution}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  ))}
+              </div>
             </div>
           </Section>
         )}
