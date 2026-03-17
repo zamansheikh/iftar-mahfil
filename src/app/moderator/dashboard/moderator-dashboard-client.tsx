@@ -645,14 +645,14 @@ export default function ModeratorDashboardClient({
                 hiddenInputName="memberId"
                 selectedId={selectedMemberIdForMoney}
                 onSelect={setSelectedMemberIdForMoney}
-                placeholder="সদস্য খুঁজে বেছে নিন"
+                placeholder="কার টাকা জমা হবে - সদস্য খুঁজে বেছে নিন"
               />
               <SearchableMemberSelect
                 members={collectors}
                 hiddenInputName="collectorId"
                 selectedId={selectedCollectorIdForMoney}
                 onSelect={setSelectedCollectorIdForMoney}
-                placeholder="Collector খুঁজে বেছে নিন"
+                placeholder="টাকা কে তুলতেছে - (Collector) খুঁজে বেছে নিন"
               />
               <input type="hidden" name="operation" value="add" />
               <input
@@ -682,7 +682,7 @@ export default function ModeratorDashboardClient({
                 hiddenInputName="collectorId"
                 selectedId={selectedCollectorIdForExpense}
                 onSelect={setSelectedCollectorIdForExpense}
-                placeholder="Collector খুঁজে বেছে নিন"
+                placeholder="কার হাত দিয়ে খরচ হয়েছে - (Collector) খুঁজে বেছে নিন"
               />
               <input
                 type="text"

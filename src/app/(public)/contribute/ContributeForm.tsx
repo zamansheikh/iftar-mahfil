@@ -12,7 +12,6 @@ const paymentMethods = [
   { value: 'বিকাশ', label: 'বিকাশ' },
   { value: 'নগদ_মোবাইল', label: 'নগদ (মোবাইল ব্যাংকিং)' },
   { value: 'রকেট', label: 'রকেট' },
-  { value: 'হাতে_হাতে', label: 'হাতে হাতে (অর্থ সংগ্রহকারী: আরিফুল)' },
   { value: 'অন্যান্য', label: 'অন্যান্য' },
 ];
 
@@ -339,13 +338,13 @@ export default function ContributeForm({
             </label>
             <SearchableCombobox items={memberNames} name="name" />
             <p className="text-xs text-gray-500 mt-1">
-              * সঠিক সদস্য নাম দিন অথবা নিজের নাম লিখুন।
+              * আপনার নিজের নাম লিখুন।
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              যিনি টাকা সংগ্রহ করেছেন (Collector) <span className="text-red-400">*</span>
+              কার কাছে টাকা জমা দিচ্ছো? (Collector) <span className="text-red-400">*</span>
             </label>
             <CollectorSelect
               items={collectors}
@@ -353,7 +352,7 @@ export default function ContributeForm({
               onSelect={(id) => setSelectedCollectorId(id)}
             />
             <p className="text-xs text-gray-500 mt-1">
-              * Admin প্যানেল থেকে সেট করা collector তালিকা থেকে বেছে নিন।
+              * এখানে থেকে বেছে নিন কার কাছে টাকা জমা দিয়েছেন। 
             </p>
           </div>
 
@@ -392,7 +391,7 @@ export default function ContributeForm({
           {/* Payment Method */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              পেমেন্টের মাধ্যম <span className="text-red-400">*</span>
+              পেমেন্টের মাধ্যম কি? (bKash, Rockt, Nagad নাকি হাতে হাতে?) <span className="text-red-400">*</span>
             </label>
             <select
               name="paymentMethod"
