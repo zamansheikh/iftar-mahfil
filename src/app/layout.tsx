@@ -16,6 +16,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // icons: {
+  //   icon: '/favicon.svg',
+  // },
   openGraph: {
     title: 'কান্দানিয়া উচ্চ বিদ্যালয় ব্যাচ ২০১৭ ইফতার মাহফিল',
     description: 'একত্রে ইফতার — রমজানের পবিত্র মুহূর্তে বন্ধুত্বের বন্ধন। আসুন, একসাথে ইফতার করি।',
