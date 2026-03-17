@@ -17,8 +17,95 @@ const paymentMethods = [
 ];
 
 export interface MemberOption {
+  _id?: string;
   name: string;
   alternativeName?: string;
+  phone?: string;
+}
+
+function CollectorSelect({
+  items,
+  selectedId,
+  onSelect,
+}: {
+  items: MemberOption[];
+  selectedId: string;
+  onSelect: (id: string, label: string) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const filteredItems = items.filter((item) => {
+    const term = query.toLowerCase();
+    return item.name.toLowerCase().includes(term)
+      || (item.alternativeName && item.alternativeName.toLowerCase().includes(term))
+      || (item.phone && item.phone.toLowerCase().includes(term));
+  });
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <input type="hidden" name="collectorId" value={selectedId} />
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            onSelect('', '');
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          required
+          placeholder="Collector বেছে নিন"
+          className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-3 pr-10 text-white text-sm focus:border-emerald-500/50 transition-colors"
+        />
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-emerald-400 transition-colors"
+        >
+          <ChevronDown className="w-4 h-4" />
+        </button>
+      </div>
+      {isOpen && (
+        <ul className="absolute z-10 w-full mt-1 max-h-56 overflow-auto bg-[#070d1a] border border-white/10 rounded-xl shadow-2xl py-1 list-none p-0 m-0 custom-scrollbar">
+          {filteredItems.length === 0 ? (
+            <li className="px-4 py-3 text-sm text-gray-400">কোনো collector পাওয়া যায়নি।</li>
+          ) : (
+            filteredItems.map((item) => (
+              <li
+                key={item._id || item.name}
+                className="px-4 py-2.5 text-sm cursor-pointer transition-colors border-b border-white/5 last:border-0 hover:bg-emerald-500/15"
+                onClick={() => {
+                  onSelect(item._id || '', item.name);
+                  setQuery(item.name);
+                  setIsOpen(false);
+                }}
+              >
+                <div className="flex flex-col">
+                  <span className="text-white hover:text-emerald-400 font-medium">{item.name}</span>
+                  <span className="text-xs text-gray-500 mt-0.5">
+                    {item.alternativeName || '---'} {item.phone ? ` | ${item.phone}` : ''}
+                  </span>
+                </div>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function SearchableCombobox({ items, name }: { items: MemberOption[], name: string }) {
@@ -119,9 +206,16 @@ function SubmitButton() {
   );
 }
 
-export default function ContributeForm({ memberNames }: { memberNames: MemberOption[] }) {
+export default function ContributeForm({
+  memberNames,
+  collectors,
+}: {
+  memberNames: MemberOption[];
+  collectors: MemberOption[];
+}) {
   const initialState: ContributeFormState = {};
   const [state, formAction] = useActionState(submitContribution, initialState);
+  const [selectedCollectorId, setSelectedCollectorId] = useState('');
 
   async function copyToClipboard(value: string) {
     try {
@@ -246,6 +340,20 @@ export default function ContributeForm({ memberNames }: { memberNames: MemberOpt
             <SearchableCombobox items={memberNames} name="name" />
             <p className="text-xs text-gray-500 mt-1">
               * সঠিক সদস্য নাম দিন অথবা নিজের নাম লিখুন।
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              যিনি টাকা সংগ্রহ করেছেন (Collector) <span className="text-red-400">*</span>
+            </label>
+            <CollectorSelect
+              items={collectors}
+              selectedId={selectedCollectorId}
+              onSelect={(id) => setSelectedCollectorId(id)}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              * Admin প্যানেল থেকে সেট করা collector তালিকা থেকে বেছে নিন।
             </p>
           </div>
 

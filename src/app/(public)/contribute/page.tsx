@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { getMemberNames } from '@/actions/data';
+import { getCollectorsForForms, getMemberNames } from '@/actions/data';
 import ContributeForm from './ContributeForm';
 
 export const metadata: Metadata = {
@@ -8,6 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default async function ContributePage() {
-  const memberNames = await getMemberNames();
-  return <ContributeForm memberNames={memberNames} />;
+  const [memberNames, collectors] = await Promise.all([
+    getMemberNames(),
+    getCollectorsForForms(),
+  ]);
+  return <ContributeForm memberNames={memberNames} collectors={collectors} />;
 }

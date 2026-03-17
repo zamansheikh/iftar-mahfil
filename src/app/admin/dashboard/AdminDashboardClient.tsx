@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useActionState, useEffect, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   logoutAction,
@@ -16,6 +17,7 @@ import {
   deleteExpense,
   updateExpense,
   updateMember,
+  toggleMemberCollector,
   approveModerationRequest,
   rejectModerationRequest,
 } from '@/actions/data';
@@ -31,13 +33,14 @@ import {
 interface EventInfo {
   title: string; date: string; time: string; location: string; description: string; exactDate?: string;
 }
-interface Member { _id: string; name: string; alternativeName?: string; phone?: string; totalContribution: number; }
+interface Member { _id: string; name: string; alternativeName?: string; phone?: string; isCollector?: boolean; totalContribution: number; }
 interface PendingContribution {
   _id: string; name: string; amount: number; paymentMethod: string;
+  collectorId?: string; collectorName?: string;
   transactionId?: string; phone: string; message?: string; submittedAt: string;
   status: 'pending' | 'approved' | 'rejected';
 }
-interface Expense { _id: string; description: string; amount: number; date: string; spentBy: string; isExpended?: boolean; }
+interface Expense { _id: string; description: string; amount: number; date: string; spentBy: string; collectorId?: string; collectorName?: string; isExpended?: boolean; }
 interface ModerationRequest {
   _id: string;
   type: 'member_contribution_update' | 'expense_add';
@@ -163,6 +166,7 @@ function EventTab({ eventInfo }: { eventInfo: EventInfo }) {
 // ─── Tab: Members ─────────────────────────────────────────────────────────────
 
 function MembersTab({ members }: { members: Member[] }) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const filteredMembers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -204,6 +208,22 @@ function MembersTab({ members }: { members: Member[] }) {
       const res = await deleteMember(id);
       if (res.success) toast.success(res.success);
       else toast.error('সদস্য মুছতে সমস্যা হয়েছে।');
+    });
+  };
+
+  const handleCollectorToggle = (memberId: string, isCollector: boolean) => {
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set('memberId', memberId);
+      formData.set('isCollector', String(isCollector));
+      const res = await toggleMemberCollector(null, formData);
+      if ((res as { success?: string })?.success) {
+        toast.success((res as { success?: string }).success);
+        router.refresh();
+      }
+      if ((res as { error?: string })?.error) {
+        toast.error((res as { error?: string }).error);
+      }
     });
   };
 
@@ -396,6 +416,9 @@ function MembersTab({ members }: { members: Member[] }) {
                       {m.alternativeName ? (
                         <p className="text-xs text-emerald-400 truncate">{m.alternativeName}</p>
                       ) : null}
+                      {m.isCollector ? (
+                        <p className="text-[11px] text-blue-300">Collector</p>
+                      ) : null}
                     </div>
                   </div>
                   <span className="text-sm font-semibold text-yellow-400 whitespace-nowrap">৳ {toBn(m.totalContribution)}</span>
@@ -404,6 +427,13 @@ function MembersTab({ members }: { members: Member[] }) {
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-xs text-gray-500 truncate">{m.phone}</div>
                   <div className="flex items-center gap-3">
+                    <Btn
+                      onClick={() => handleCollectorToggle(m._id, !m.isCollector)}
+                      disabled={isPending}
+                      className={`${m.isCollector ? 'border border-amber-500/30 text-amber-300 hover:bg-amber-500/10' : 'border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10'}`}
+                    >
+                      {m.isCollector ? 'Collector Off' : 'Collector On'}
+                    </Btn>
                     {m.phone && (
                       <a
                         href={`tel:${m.phone}`}
@@ -434,6 +464,7 @@ function MembersTab({ members }: { members: Member[] }) {
 
 function PendingTab({ contributions }: { contributions: PendingContribution[] }) {
   const [isPending, startTransition] = useTransition();
+  const [collectorFilter, setCollectorFilter] = useState('all');
 
   const handleApprove = (id: string) => {
     startTransition(async () => {
@@ -450,11 +481,44 @@ function PendingTab({ contributions }: { contributions: PendingContribution[] })
     });
   };
 
-  const pending = contributions.filter((c) => c.status === 'pending');
-  const processed = contributions.filter((c) => c.status !== 'pending');
+  const collectorOptions = useMemo(() => {
+    const names = Array.from(new Set(contributions.map((c) => c.collectorName || 'Unassigned')));
+    return names.sort((a, b) => a.localeCompare(b));
+  }, [contributions]);
+
+  const filteredContributions = useMemo(() => {
+    if (collectorFilter === 'all') return contributions;
+    if (collectorFilter === 'Unassigned') return contributions.filter((c) => !c.collectorName);
+    return contributions.filter((c) => c.collectorName === collectorFilter);
+  }, [collectorFilter, contributions]);
+
+  const pending = filteredContributions.filter((c) => c.status === 'pending');
+  const processed = filteredContributions.filter((c) => c.status !== 'pending');
+  const pendingTotal = pending.reduce((sum, c) => sum + c.amount, 0);
+  const approvedTotal = processed.filter((c) => c.status === 'approved').reduce((sum, c) => sum + c.amount, 0);
 
   return (
     <div className="space-y-6">
+      <SectionCard title="Collector ভিত্তিক ফিল্টার">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <select
+            value={collectorFilter}
+            onChange={(e) => setCollectorFilter(e.target.value)}
+            className="bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
+          >
+            <option value="all">সব Collector</option>
+            <option value="Unassigned">Unassigned</option>
+            {collectorOptions.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+          <div className="flex gap-3 text-sm">
+            <span className="px-3 py-2 rounded-lg bg-yellow-500/10 text-yellow-300">Pending: ৳ {toBn(pendingTotal)}</span>
+            <span className="px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-300">Approved: ৳ {toBn(approvedTotal)}</span>
+          </div>
+        </div>
+      </SectionCard>
+
       <SectionCard title={`অপেক্ষমান চাঁদা (${toBn(pending.length)}টি)`}>
         {pending.length === 0 ? (
           <div className="text-center py-8">
@@ -470,6 +534,9 @@ function PendingTab({ contributions }: { contributions: PendingContribution[] })
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-white">{c.name}</p>
                       <span className="badge-gold px-2 py-0.5 rounded-full text-xs">{c.paymentMethod}</span>
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-blue-500/10 text-blue-300">
+                        {c.collectorName || 'Unassigned'}
+                      </span>
                     </div>
                     <p className="text-2xl font-bold text-yellow-400">৳ {toBn(c.amount)}</p>
                     <p className="text-xs text-gray-400">📞 {c.phone}</p>
@@ -513,7 +580,7 @@ function PendingTab({ contributions }: { contributions: PendingContribution[] })
               <div key={c._id} className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/5">
                 <div>
                   <p className="text-sm font-medium text-white">{c.name}</p>
-                  <p className="text-xs text-gray-500">{c.paymentMethod} — ৳ {toBn(c.amount)}</p>
+                  <p className="text-xs text-gray-500">{c.paymentMethod} — ৳ {toBn(c.amount)} — {c.collectorName || 'Unassigned'}</p>
                 </div>
                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${c.status === 'approved' ? 'badge-emerald' : 'badge-red'}`}>
                   {c.status === 'approved' ? 'অনুমোদিত' : 'প্রত্যাখ্যাত'}
@@ -529,12 +596,19 @@ function PendingTab({ contributions }: { contributions: PendingContribution[] })
 
 // ─── Tab: Expenses ────────────────────────────────────────────────────────────
 
-function ExpensesTab({ expenses }: { expenses: Expense[] }) {
+function ExpensesTab({ expenses, collectors }: { expenses: Expense[]; collectors: Member[] }) {
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [collectorFilter, setCollectorFilter] = useState('all');
   const [state, formAction] = useActionState(addExpense, null);
   const [updateState, updateFormAction] = useActionState(updateExpense, null);
   const [isPending, startTransition] = useTransition();
+
+  const filteredExpenses = useMemo(() => {
+    if (collectorFilter === 'all') return expenses;
+    if (collectorFilter === 'Unassigned') return expenses.filter((e) => !e.collectorName);
+    return expenses.filter((e) => e.collectorName === collectorFilter);
+  }, [collectorFilter, expenses]);
 
   useEffect(() => {
     if (state?.success) {
@@ -580,6 +654,25 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
           নতুন খরচ
         </button>
       </div>
+
+      <SectionCard title="Collector ভিত্তিক খরচ ফিল্টার">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <select
+            value={collectorFilter}
+            onChange={(e) => setCollectorFilter(e.target.value)}
+            className="bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
+          >
+            <option value="all">সব Collector</option>
+            <option value="Unassigned">Unassigned</option>
+            {collectors.map((collector) => (
+              <option key={collector._id} value={collector.name}>{collector.name}</option>
+            ))}
+          </select>
+          <span className="px-3 py-2 rounded-lg bg-red-500/10 text-red-300 text-sm">
+            Total: ৳ {toBn(filteredExpenses.reduce((s, e) => s + e.amount, 0))}
+          </span>
+        </div>
+      </SectionCard>
 
       {isAddingExpense && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -627,14 +720,18 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">কে খরচ করেছে?</label>
-                <input
-                  type="text"
-                  name="spentBy"
+                <label className="block text-xs font-medium text-gray-400 mb-1">Collector নির্বাচন করুন</label>
+                <select
+                  name="collectorId"
                   required
-                  placeholder="নাম"
+                  defaultValue=""
                   className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-                />
+                >
+                  <option value="" disabled>Collector নির্বাচন করুন</option>
+                  {collectors.map((collector) => (
+                    <option key={collector._id} value={collector._id}>{collector.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
                 <input type="hidden" name="isExpended" value="false" />
@@ -711,14 +808,18 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">কে খরচ করেছে?</label>
-                <input
-                  type="text"
-                  name="spentBy"
-                  defaultValue={editingExpense.spentBy}
+                <label className="block text-xs font-medium text-gray-400 mb-1">Collector নির্বাচন করুন</label>
+                <select
+                  name="collectorId"
                   required
+                  defaultValue={editingExpense.collectorId || ''}
                   className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-emerald-500/50 transition-colors"
-                />
+                >
+                  <option value="" disabled>Collector নির্বাচন করুন</option>
+                  {collectors.map((collector) => (
+                    <option key={collector._id} value={collector._id}>{collector.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
                 <input type="hidden" name="isExpended" value="false" />
@@ -747,16 +848,16 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
         </div>
       )}
 
-      <SectionCard title={`খরচের তালিকা (${toBn(expenses.length)}টি)`}>
-        {expenses.length === 0 ? (
+      <SectionCard title={`খরচের তালিকা (${toBn(filteredExpenses.length)}টি)`}>
+        {filteredExpenses.length === 0 ? (
           <p className="text-center text-gray-500 text-sm py-6">কোনো খরচ নেই।</p>
         ) : (
           <div className="space-y-2">
-            {expenses.map((e) => (
+            {filteredExpenses.map((e) => (
               <div key={e._id} className="flex flex-col p-3 rounded-xl bg-white/3 border border-white/5 hover:border-red-500/20 transition-colors">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{e.description} <span className="text-xs text-yellow-500/80">({e.spentBy})</span></p>
+                    <p className="text-sm font-medium text-white truncate">{e.description} <span className="text-xs text-yellow-500/80">({e.collectorName || e.spentBy || 'Unassigned'})</span></p>
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${e.isExpended ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
                       {e.isExpended ? '✓ খরচ হয়েছে' : '⧗ তালিকা'}
                     </span>
@@ -778,7 +879,7 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
             ))}
             <div className="flex justify-between pt-3 border-t border-white/10">
               <span className="text-sm font-bold text-gray-400">মোট খরচ</span>
-              <span className="text-sm font-bold text-red-400">৳ {toBn(expenses.reduce((s, e) => s + e.amount, 0))}</span>
+              <span className="text-sm font-bold text-red-400">৳ {toBn(filteredExpenses.reduce((s, e) => s + e.amount, 0))}</span>
             </div>
           </div>
         )}
@@ -1243,7 +1344,7 @@ export default function AdminDashboardClient({
         {activeTab === 'event' && <EventTab eventInfo={eventInfo} />}
         {activeTab === 'members' && <MembersTab members={members} />}
         {activeTab === 'pending' && <PendingTab contributions={pendingContributions} />}
-        {activeTab === 'expenses' && <ExpensesTab expenses={expenses} />}
+        {activeTab === 'expenses' && <ExpensesTab expenses={expenses} collectors={members.filter((m) => m.isCollector)} />}
         {activeTab === 'moderation' && <ModerationTab requests={moderationRequests} />}
         {activeTab === 'summary' && <SummaryTab summary={summary} members={members} expenses={expenses} />}
       </div>

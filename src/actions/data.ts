@@ -75,12 +75,70 @@ export async function getMemberNames() {
   return members.map((m) => ({ name: m.name as string, alternativeName: (m as any).alternativeName as string | undefined }));
 }
 
+export async function getCollectors() {
+  await dbConnect();
+  const collectors = await Member.find({ isCollector: true }).sort({ name: 1 }).lean();
+  return JSON.parse(JSON.stringify(collectors));
+}
+
+export async function getCollectorsForForms() {
+  await dbConnect();
+  const collectors = await Member.find({ isCollector: true })
+    .select('_id name alternativeName phone')
+    .sort({ name: 1 })
+    .lean();
+  return JSON.parse(JSON.stringify(collectors));
+}
+
 const memberSchema = z.object({
   name: z.string().min(1, 'নাম প্রয়োজন'),
   alternativeName: z.string().optional(),
   phone: z.string().optional(),
+  isCollector: z.boolean().optional(),
   totalContribution: z.number().min(0).optional(),
 });
+
+const collectorAssignmentSchema = z.object({
+  memberId: z.string().min(1, 'সদস্য নির্বাচন করুন'),
+  isCollector: z.boolean(),
+});
+
+export async function toggleMemberCollector(_prev: unknown, formData: FormData) {
+  await requireAdmin();
+  await dbConnect();
+
+  const data = {
+    memberId: formData.get('memberId')?.toString() || '',
+    isCollector: formData.get('isCollector')?.toString() === 'true',
+  };
+
+  const parsed = collectorAssignmentSchema.safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const member = await Member.findById(parsed.data.memberId);
+  if (!member) return { error: 'সদস্য পাওয়া যায়নি।' };
+
+  const updated = await Member.findByIdAndUpdate(
+    parsed.data.memberId,
+    { $set: { isCollector: parsed.data.isCollector } },
+    { new: true }
+  ).lean();
+
+  if (!updated) return { error: 'Collector status আপডেট করা যায়নি।' };
+
+  revalidatePath('/admin/dashboard');
+  revalidatePath('/moderator/dashboard');
+  revalidatePath('/contribute');
+  revalidatePath('/accounts');
+  return {
+    success: updated.isCollector
+      ? 'সদস্যকে collector হিসেবে সেট করা হয়েছে।'
+      : 'Collector দায়িত্ব থেকে সরানো হয়েছে।',
+    isCollector: Boolean(updated.isCollector),
+    memberId: String(updated._id),
+    timestamp: Date.now(),
+  };
+}
 
 export async function addMember(_prev: unknown, formData: FormData) {
   await requireAdmin();
@@ -195,6 +253,7 @@ export async function moderatorUpdateMemberPhone(_prev: unknown, formData: FormD
 
 const contributionAdjustmentSchema = z.object({
   memberId: z.string().min(1, 'সদস্য নির্বাচন করুন'),
+  collectorId: z.string().min(1, 'Collector নির্বাচন করুন'),
   operation: z.enum(['add', 'set']),
   amount: z.number().min(0, 'টাকার পরিমাণ সঠিক হতে হবে'),
   note: z.string().optional(),
@@ -206,6 +265,7 @@ export async function createContributionAdjustmentRequest(_prev: unknown, formDa
 
   const data = {
     memberId: formData.get('memberId')?.toString() || '',
+    collectorId: formData.get('collectorId')?.toString() || '',
     operation: (formData.get('operation')?.toString() || 'add') as 'add' | 'set',
     amount: Number(formData.get('amount')),
     note: formData.get('note')?.toString().trim() || '',
@@ -217,6 +277,9 @@ export async function createContributionAdjustmentRequest(_prev: unknown, formDa
   const member = await Member.findById(parsed.data.memberId).lean();
   if (!member) return { error: 'সদস্য পাওয়া যায়নি।' };
 
+  const collector = await Member.findOne({ _id: parsed.data.collectorId, isCollector: true }).lean();
+  if (!collector) return { error: 'সঠিক collector নির্বাচন করুন।' };
+
   await ModerationRequest.create({
     type: 'member_contribution_update',
     status: 'pending',
@@ -226,6 +289,8 @@ export async function createContributionAdjustmentRequest(_prev: unknown, formDa
     payload: {
       memberId: parsed.data.memberId,
       memberName: member.name,
+      collectorId: parsed.data.collectorId,
+      collectorName: collector.name,
       operation: parsed.data.operation,
       amount: parsed.data.amount,
     },
@@ -240,7 +305,7 @@ const expenseRequestSchema = z.object({
   description: z.string().min(1, 'বিবরণ প্রয়োজন'),
   amount: z.number().min(0, 'পরিমাণ সঠিক হতে হবে'),
   date: z.string().min(1, 'তারিখ প্রয়োজন'),
-  spentBy: z.string().min(1, 'কে খরচ করেছে তা উল্লেখ করুন'),
+  collectorId: z.string().min(1, 'Collector নির্বাচন করুন'),
   note: z.string().optional(),
 });
 
@@ -252,12 +317,15 @@ export async function createExpenseRequest(_prev: unknown, formData: FormData) {
     description: formData.get('description')?.toString().trim() || '',
     amount: Number(formData.get('amount')),
     date: formData.get('date')?.toString() || '',
-    spentBy: formData.get('spentBy')?.toString().trim() || '',
+    collectorId: formData.get('collectorId')?.toString() || '',
     note: formData.get('note')?.toString().trim() || '',
   };
 
   const parsed = expenseRequestSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const collector = await Member.findOne({ _id: parsed.data.collectorId, isCollector: true }).lean();
+  if (!collector) return { error: 'সঠিক collector নির্বাচন করুন।' };
 
   await ModerationRequest.create({
     type: 'expense_add',
@@ -269,7 +337,9 @@ export async function createExpenseRequest(_prev: unknown, formData: FormData) {
       description: parsed.data.description,
       amount: parsed.data.amount,
       date: parsed.data.date,
-      spentBy: parsed.data.spentBy,
+      spentBy: collector.name,
+      collectorId: String(collector._id),
+      collectorName: collector.name,
     },
   });
 
@@ -285,6 +355,7 @@ const contributionSchema = z.object({
   phone: z.string().min(1, 'ফোন নম্বর প্রয়োজন'),
   amount: z.number().min(1, 'চাঁদার পরিমাণ কমপক্ষে ১ টাকা হতে হবে'),
   paymentMethod: z.string().min(1, 'পেমেন্টের মাধ্যম বেছে নিন'),
+  collectorId: z.string().min(1, 'Collector নির্বাচন করুন'),
   transactionId: z.string().optional(),
   message: z.string().optional(),
 });
@@ -304,13 +375,21 @@ export async function submitContribution(
     phone: formData.get('phone') as string,
     amount: Number(formData.get('amount')),
     paymentMethod: formData.get('paymentMethod') as string,
+    collectorId: formData.get('collectorId') as string,
     transactionId: formData.get('transactionId') as string,
     message: formData.get('message') as string,
   };
   const parsed = contributionSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await PendingContribution.create({ ...parsed.data, submittedAt: new Date() });
+  const collector = await Member.findOne({ _id: parsed.data.collectorId, isCollector: true }).lean();
+  if (!collector) return { error: 'Collector নির্বাচন সঠিক নয়। আবার নির্বাচন করুন।' };
+
+  await PendingContribution.create({
+    ...parsed.data,
+    collectorName: collector.name,
+    submittedAt: new Date(),
+  });
   revalidatePath('/contribute');
   return { success: 'আপনার চাঁদা জমা অনুরোধ পাঠানো হয়েছে। অ্যাডমিন অনুমোদন করলে দেখা যাবে।' };
 }
@@ -412,12 +491,16 @@ export async function approveModerationRequest(id: string) {
       amount: number;
       date: string;
       spentBy: string;
+      collectorId?: string;
+      collectorName?: string;
     };
     await Expense.create({
       description: payload.description,
       amount: payload.amount,
       date: new Date(payload.date),
       spentBy: payload.spentBy,
+      collectorId: payload.collectorId || undefined,
+      collectorName: payload.collectorName || payload.spentBy,
       isExpended: true,
     });
     revalidatePath('/accounts');
@@ -470,7 +553,7 @@ const expenseSchema = z.object({
   description: z.string().min(1, 'বিবরণ প্রয়োজন'),
   amount: z.number().min(0, 'পরিমাণ সঠিক হতে হবে'),
   date: z.string().min(1, 'তারিখ প্রয়োজন'),
-  spentBy: z.string().min(1, 'কে খরচ করেছে তা উল্লেখ করুন'),
+  collectorId: z.string().min(1, 'Collector নির্বাচন করুন'),
   isExpended: z.boolean(),
 });
 
@@ -502,13 +585,21 @@ export async function addExpense(_prev: unknown, formData: FormData) {
     description: getFormValue(formData, 'description') as string,
     amount: Number(getFormValue(formData, 'amount')),
     date: getFormValue(formData, 'date') as string,
-    spentBy: getFormValue(formData, 'spentBy') as string,
+    collectorId: (getFormValue(formData, 'collectorId') as string) || '',
     isExpended,
   };
   const parsed = expenseSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await Expense.create({ ...parsed.data, date: new Date(parsed.data.date) });
+  const collector = await Member.findOne({ _id: parsed.data.collectorId, isCollector: true }).lean();
+  if (!collector) return { error: 'সঠিক collector নির্বাচন করুন।' };
+
+  await Expense.create({
+    ...parsed.data,
+    date: new Date(parsed.data.date),
+    spentBy: collector.name,
+    collectorName: collector.name,
+  });
   revalidatePath('/accounts');
   revalidatePath('/admin/dashboard');
   revalidatePath('/');
@@ -524,14 +615,22 @@ export async function updateExpense(_prev: unknown, formData: FormData) {
     description: getFormValue(formData, 'description') as string,
     amount: Number(getFormValue(formData, 'amount')),
     date: getFormValue(formData, 'date') as string,
-    spentBy: getFormValue(formData, 'spentBy') as string,
+    collectorId: (getFormValue(formData, 'collectorId') as string) || '',
     isExpended,
   };
   const parsed = expenseSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
+  const collector = await Member.findOne({ _id: parsed.data.collectorId, isCollector: true }).lean();
+  if (!collector) return { error: 'সঠিক collector নির্বাচন করুন।' };
+
   console.log('[updateExpense] parsed.data:', parsed.data);
-  await Expense.findByIdAndUpdate(id, { ...parsed.data, date: new Date(parsed.data.date) });
+  await Expense.findByIdAndUpdate(id, {
+    ...parsed.data,
+    date: new Date(parsed.data.date),
+    spentBy: collector.name,
+    collectorName: collector.name,
+  });
   revalidatePath('/accounts');
   revalidatePath('/admin/dashboard');
   revalidatePath('/');

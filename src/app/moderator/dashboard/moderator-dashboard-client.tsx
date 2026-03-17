@@ -29,6 +29,7 @@ interface Member {
   name: string;
   alternativeName?: string;
   phone?: string;
+  isCollector?: boolean;
   totalContribution: number;
 }
 
@@ -493,7 +494,10 @@ export default function ModeratorDashboardClient({
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('memberList');
   const [selectedMemberIdForPhone, setSelectedMemberIdForPhone] = useState('');
   const [selectedMemberIdForMoney, setSelectedMemberIdForMoney] = useState('');
+  const [selectedCollectorIdForMoney, setSelectedCollectorIdForMoney] = useState('');
+  const [selectedCollectorIdForExpense, setSelectedCollectorIdForExpense] = useState('');
   const [memberListQuery, setMemberListQuery] = useState('');
+  const collectors = useMemo(() => members.filter((m) => m.isCollector), [members]);
 
   const [addMemberState, addMemberAction] = useActionState(moderatorAddMember, null);
   const [phoneState, phoneAction] = useActionState(moderatorUpdateMemberPhone, null);
@@ -621,6 +625,13 @@ export default function ModeratorDashboardClient({
                 onSelect={setSelectedMemberIdForMoney}
                 placeholder="সদস্য খুঁজে বেছে নিন"
               />
+              <SearchableMemberSelect
+                members={collectors}
+                hiddenInputName="collectorId"
+                selectedId={selectedCollectorIdForMoney}
+                onSelect={setSelectedCollectorIdForMoney}
+                placeholder="Collector খুঁজে বেছে নিন"
+              />
               <input type="hidden" name="operation" value="add" />
               <input
                 type="number"
@@ -644,6 +655,13 @@ export default function ModeratorDashboardClient({
         {activeTab === 'expense' && (
           <Section title="খরচ যোগের অনুরোধ পাঠান (অ্যাডমিন অনুমোদন সাপেক্ষে)">
             <form action={expenseReqAction} className="space-y-3 max-w-2xl">
+              <SearchableMemberSelect
+                members={collectors}
+                hiddenInputName="collectorId"
+                selectedId={selectedCollectorIdForExpense}
+                onSelect={setSelectedCollectorIdForExpense}
+                placeholder="Collector খুঁজে বেছে নিন"
+              />
               <input
                 type="text"
                 name="description"
@@ -663,13 +681,6 @@ export default function ModeratorDashboardClient({
                 type="date"
                 name="date"
                 required
-                className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
-              />
-              <input
-                type="text"
-                name="spentBy"
-                required
-                placeholder="কে খরচ করেছে"
                 className="w-full bg-[#0d1826] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
               />
               <textarea
